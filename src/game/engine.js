@@ -339,6 +339,11 @@ export class GameEngine {
       }
 
       // Collision
+      // Integrity Check: Ensure circleRect hasn't been replaced by a dummy that always returns false
+      if (!circleRect(0, 0, 10, 0, 0, 10, 10)) {
+          state.isCheater = true;
+      }
+
       for (const o of state.obstacles) {
         if (circleRect(player.x, player.y, CONSTANTS.PLAYER_R, o.x, o.y, o.w, o.h)) {
           state.gameOver = true;
