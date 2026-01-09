@@ -45,13 +45,21 @@ export class Renderer {
 
   drawTrajectory(state) {
     const { player, speed } = state;
-    if (!player.charging) return;
+    
+    let vy, x = player.x, y = player.y;
 
-    const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
-    const boost = 1 + p * CONSTANTS.CHARGE_MULT;
-    let vy = -CONSTANTS.BASE_JUMP * boost;
-    let x = player.x;
-    let y = player.y;
+    if (player.charging) {
+       // Prediction based on charge
+       const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
+       const boost = 1 + p * CONSTANTS.CHARGE_MULT;
+       vy = -CONSTANTS.BASE_JUMP * boost;
+    } else if (!player.onGround) {
+       // Real-time path based on current physics
+       vy = player.vy;
+    } else {
+       // Idle on ground - no path
+       return;
+    }
 
     const dt = 0.05; // Simulation step
     const groundY = this.groundY() - CONSTANTS.PLAYER_R;
