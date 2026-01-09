@@ -112,7 +112,15 @@ export class GameEngine {
     } else {
         // Wall Logic (Existing)
         const cols = Math.floor(Math.random() * 2) + 1;
-        rows = Math.floor(Math.random() * 3) + 1;
+        
+        // Weighted Height Logic:
+        // 60% -> Height 1
+        // 30% -> Height 2
+        // 10% -> Height 3
+        const r = Math.random();
+        if (r < 0.6) rows = 1;
+        else if (r < 0.9) rows = 2;
+        else rows = 3;
 
         const lastOb = obstacles[obstacles.length - 1];
         if (lastOb && lastOb.type === 'wall') {
