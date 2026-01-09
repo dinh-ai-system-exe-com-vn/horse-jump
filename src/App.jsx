@@ -13,6 +13,8 @@ export default function App() {
     inMenu: true,
     showTrajectory: true
   });
+  
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleGameInit = useCallback((eng) => {
     setEngine(eng);
@@ -38,6 +40,7 @@ export default function App() {
     if (!engine) return;
 
     const handleKeyDown = (e) => {
+      if (showSettings) return;
       if (e.repeat) return;
       if (e.code === "Space" || e.code === "ArrowUp") engine.press();
       
@@ -50,22 +53,29 @@ export default function App() {
       }
     };
     const handleKeyUp = (e) => {
+      if (showSettings) return;
       if (e.code === "Space" || e.code === "ArrowUp") engine.release();
     };
     const handleMouseDown = (e) => {
+      if (showSettings) return;
       // If clicking a button, don't jump (React handles button click)
-      if (e.target.tagName === 'BUTTON') return;
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
       engine.press();
     };
-    const handleMouseUp = () => engine.release();
+    const handleMouseUp = () => {
+       if (showSettings) return;
+       engine.release();
+    };
     const handleTouchStart = (e) => {
-       if (e.target.tagName === 'BUTTON') return;
+       if (showSettings) return;
+       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
        // Prevent default only if we are not on a button, to stop scrolling/zooming
        if (e.cancelable) e.preventDefault(); 
        engine.press();
     };
     const handleTouchEnd = (e) => {
-       if (e.target.tagName === 'BUTTON') return;
+       if (showSettings) return;
+       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
        if (e.cancelable) e.preventDefault(); 
        engine.release();
     };
@@ -85,7 +95,7 @@ export default function App() {
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [engine]);
+  }, [engine, showSettings]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
@@ -95,6 +105,8 @@ export default function App() {
         onStart={handleStart} 
         onRestart={handleRestart} 
         onToggleTrajectory={() => engine?.toggleTrajectory()}
+        showSettings={showSettings}
+        onToggleSettings={() => setShowSettings(!showSettings)}
       />
     </div>
   );
