@@ -301,12 +301,22 @@ export class Renderer {
 
     // Player Context
     ctx.save();
-    ctx.translate(player.x, player.y);
+    
+    // Physical exhaustion effect (shivering)
+    let shiverX = 0, shiverY = 0;
+    if (state.deathCount >= 50) {
+      // Starts at 50 deaths, intensity increases up to 100
+      const shiverIntensity = Math.min(5, (state.deathCount - 50) / 10);
+      shiverX = (Math.random() - 0.5) * shiverIntensity;
+      shiverY = (Math.random() - 0.5) * shiverIntensity;
+    }
 
-    // Optimized Player Glow (Inside Translate)
-    // Draw at (0,0) relative to player
+    ctx.translate(player.x + shiverX, player.y + shiverY);
+
+    // Optimized Player Glow
     const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, 60);
-    glow.addColorStop(0, "rgba(255, 255, 200, 0.15)");
+    const glowAlpha = Math.max(0, 0.15 - (state.deathCount * 0.001)); // Glow fades slower, reaches min at 150
+    glow.addColorStop(0, `rgba(255, 255, 200, ${glowAlpha})`);
     glow.addColorStop(1, "rgba(255, 255, 200, 0)");
     ctx.fillStyle = glow;
     ctx.beginPath();
@@ -317,24 +327,80 @@ export class Renderer {
     if (!player.onGround) {
       rot = Math.min(0.5, Math.max(-0.5, player.vy / 1000));
     }
-    ctx.rotate(rot);
+    // Exhaustion tilt: reaches max at 100 deaths
+    const exhaustionTilt = Math.min(0.3, (state.deathCount / 100));
+    ctx.rotate(rot + exhaustionTilt);
 
     if (assets.horse.complete && assets.horse.naturalWidth > 0) {
       const drawSize = 48;
       const offset = drawSize / 2;
+      
+      // Visual decay based on deathCount (Maxed at 100)
+      const decay = Math.min(state.deathCount, 100) / 100; 
+      const gray = decay * 90; 
+      const bright = 100 - (decay * 50); 
+      const sepia = decay * 40; 
+
+      ctx.save();
+      ctx.filter = `grayscale(${gray}%) brightness(${bright}%) sepia(${sepia}%)`;
       ctx.drawImage(assets.horse, -offset, -offset, drawSize, drawSize);
+      ctx.restore();
+
+      // Procedural Scars and Dirt (Starts at 25 deaths)
+      if (state.deathCount >= 25) {
+        ctx.save();
+        const numScars = Math.min(12, Math.floor((state.deathCount - 25) / 6) + 1);
+        ctx.strokeStyle = "rgba(60, 0, 0, 0.6)";
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < numScars; i++) {
+          const seed = (i * 13.5) % 30;
+          const sx = -15 + (seed % 30);
+          const sy = -10 + ((seed * 7) % 20);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx + 5, sy + 5);
+          ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(40, 30, 20, 0.5)";
+        for (let i = 0; i < numScars; i++) {
+          const dx = 10 - ((i * 17) % 25);
+          const dy = 5 - ((i * 23) % 15);
+          ctx.beginPath();
+          ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
 
       if (!player.onGround && assets.wings.complete && assets.wings.naturalWidth > 0) {
         ctx.save();
-        ctx.translate(-2, -12);
+        ctx.translate(-15, -12); 
         const flapSpeed = player.vy < 0 ? 25 : 12;
         const flapAngle = Math.sin(timeAlive * flapSpeed) * 0.5;
         ctx.rotate(flapAngle - 0.1);
-        ctx.drawImage(assets.wings, -25, -15, 30, 20);
+        
+        // Tattered wings: reaches 0.2 alpha at 100 deaths
+        ctx.globalAlpha = Math.max(0.2, 1 - (state.deathCount * 0.008));
+
+        // Gradual Redness: Starts at 25 deaths, reaches max at 100 deaths
+        if (state.deathCount >= 25) {
+          const redness = Math.min(1, (state.deathCount - 25) / 75); 
+          // All filter values now scale with 'redness' to ensure a smooth transition
+          const sepiaVal = redness;
+          const saturateVal = 1 + redness * 20;
+          const hueVal = -65 * redness;
+          const brightVal = 1 - redness * 0.3;
+          const grayVal = redness * 0.5;
+          
+          ctx.filter = `grayscale(${grayVal}) sepia(${sepiaVal}) saturate(${saturateVal}) hue-rotate(${hueVal}deg) brightness(${brightVal})`;
+        }
+
+        ctx.drawImage(assets.wings, -15, -10, 30, 20); 
         ctx.restore();
       }
 
       if (player.charging) {
+        // ... (charging effects logic unchanged)
         const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
         ctx.globalCompositeOperation = "lighter";
         
@@ -375,12 +441,24 @@ export class Renderer {
         ctx.globalCompositeOperation = "source-over"; 
       }
 
+      // Eyes logic - Starts at 75 deaths
+      const ex = 9, ey = -7.5;
       if (player.isBlinking) {
-        const ex = -9, ey = -7.5;
         ctx.fillStyle = "#dfa";
         ctx.beginPath(); ctx.arc(ex, ey, 3.5, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = "#333"; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(ex - 3, ey); ctx.lineTo(ex + 3, ey); ctx.stroke();
+      } else if (state.deathCount >= 75) {
+        // Tired eyes intensity grows from 75 to 100
+        const eyeRedness = Math.min(0.6, (state.deathCount - 75) / 40);
+        ctx.fillStyle = `rgba(255, 0, 0, ${eyeRedness})`;
+        ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(ex, ey, 2, 0, Math.PI * 2); ctx.fill();
+        
+        ctx.strokeStyle = `rgba(0, 0, 0, ${0.2 + eyeRedness})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(ex, ey + 4, 3, 0.2, Math.PI - 0.2); ctx.stroke();
       }
 
     } else {

@@ -1,7 +1,7 @@
 import React from 'react';
 
 export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, showSettings, onToggleSettings }) {
-  const { score, best, gameOver, inMenu, showTrajectory } = gameState;
+  const { score, best, deathCount, gameOver, inMenu, showTrajectory } = gameState;
 
   return (
     <>
@@ -9,6 +9,7 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
       {inMenu && (
         <div style={styles.overlay}>
           <h1 style={styles.title}>NGỰA CHIẾN</h1>
+          <p style={styles.subText}>Số lần tử trận: {deathCount}</p>
           <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
           <p style={styles.hint}>Giữ chuột/màn hình để nạp lực nhảy.</p>
         </div>
@@ -19,13 +20,14 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
           <h1 style={{...styles.title, color: '#ef4444'}}>GAME OVER</h1>
           <p style={styles.scoreText}>Điểm: {score}</p>
           <p style={styles.subText}>Kỷ lục: {best}</p>
+          <p style={styles.subText}>Tổng số lần chết: {deathCount}</p>
           <button style={styles.button} onClick={onRestart}>CHƠI LẠI</button>
         </div>
       )}
 
       {!inMenu && !gameOver && (
         <div style={styles.hud}>
-          Score: {score} &nbsp; Best: {best}
+          Score: {score} &nbsp; Best: {best} &nbsp; <span style={{fontSize: '16px', opacity: 0.7}}>Deaths: {deathCount}</span>
         </div>
       )}
 

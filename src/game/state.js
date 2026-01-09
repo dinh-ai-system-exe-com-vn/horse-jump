@@ -4,6 +4,7 @@ export class GameState {
   constructor() {
     this.score = 0;
     this.best = parseInt(localStorage.getItem('chargeJumpBest')) || 0;
+    this.deathCount = parseInt(localStorage.getItem('chargeJumpDeaths')) || 0;
     this.timeAlive = 0;
     this.speed = CONSTANTS.SPEED_BASE;
     this.shake = 0;
@@ -36,6 +37,10 @@ export class GameState {
       this.best = this.score;
       localStorage.setItem('chargeJumpBest', this.best);
     }
+  }
+
+  saveDeaths() {
+    localStorage.setItem('chargeJumpDeaths', this.deathCount);
   }
 
   reset() {

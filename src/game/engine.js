@@ -342,6 +342,8 @@ export class GameEngine {
       for (const o of state.obstacles) {
         if (circleRect(player.x, player.y, CONSTANTS.PLAYER_R, o.x, o.y, o.w, o.h)) {
           state.gameOver = true;
+          state.deathCount++;
+          state.saveDeaths();
           state.saveBest();
           state.shake = 14;
           audioManager.crash();

@@ -9,6 +9,7 @@ export default function App() {
   const [gameState, setGameState] = useState({
     score: 0,
     best: 0,
+    deathCount: 0,
     gameOver: false,
     inMenu: true,
     showTrajectory: true
@@ -23,6 +24,7 @@ export default function App() {
       setGameState({
         score: state.score,
         best: state.best,
+        deathCount: state.deathCount,
         gameOver: state.gameOver,
         inMenu: state.inMenu,
         showTrajectory: state.showTrajectory
