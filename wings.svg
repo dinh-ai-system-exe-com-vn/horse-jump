@@ -1,0 +1,11 @@
+<svg width="48" height="32" viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Group to flip the wing horizontally -->
+  <g transform="scale(-1, 1) translate(-48, 0)">
+    <!-- Wing Shape -->
+    <path d="M2 28 C 2 28, -2 10, 14 4 C 22 0, 42 0, 42 8 C 42 14, 26 20, 22 22 C 30 24, 34 28, 26 30 C 18 32, 10 30, 2 28 Z"
+          fill="#ffffff" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Feathers detail -->
+    <path d="M14 6 Q 25 6 30 12" fill="none" stroke="#e2e8f0" stroke-width="1.5" />
+    <path d="M12 14 Q 22 16 26 20" fill="none" stroke="#e2e8f0" stroke-width="1.5" />
+  </g>
+</svg>
