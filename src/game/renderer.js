@@ -276,7 +276,7 @@ export class Renderer {
         ctx.lineTo(wx - 20, wy + 10);
         ctx.fill();
         ctx.fillStyle = "#fff";
-        ctx.font = "bold 20px sans-serif";
+        ctx.font = "bold 20px 'Be Vietnam Pro', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText("!", wx, wy);
