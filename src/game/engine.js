@@ -97,6 +97,7 @@ export class GameEngine {
     
     let type = isCeiling ? 'ceiling' : 'wall';
     let x, w, h, y;
+    let rows = 0; // Default 0 for non-wall types
 
     const groundY = this.renderer.groundY();
 
@@ -111,7 +112,7 @@ export class GameEngine {
     } else {
         // Wall Logic (Existing)
         const cols = Math.floor(Math.random() * 2) + 1;
-        let rows = Math.floor(Math.random() * 3) + 1;
+        rows = Math.floor(Math.random() * 3) + 1;
 
         const lastOb = obstacles[obstacles.length - 1];
         if (lastOb && lastOb.type === 'wall') {
