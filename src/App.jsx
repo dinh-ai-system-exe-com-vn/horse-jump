@@ -98,7 +98,10 @@ export default function App() {
   }, [engine, showSettings]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div 
+      style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
       <GameCanvas onGameInit={handleGameInit} />
       <UI 
         gameState={gameState} 
