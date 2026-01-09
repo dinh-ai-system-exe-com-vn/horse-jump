@@ -618,7 +618,7 @@
       for(let i=0; i<5; i++) spawnDust(player.x, player.y + PLAYER_R);
       return;
     }
-    if (player.onGround) { player.charging = true; player.chargeT = 0; }
+    if (player.onGround && !player.charging) { player.charging = true; player.chargeT = 0; }
   }
   function release() {
     if (inMenu || gameOver) return;
@@ -660,6 +660,7 @@
     if (!inMenu && !gameOver) { e.preventDefault(); release(); }
   }, {passive:false});
   addEventListener("keydown", (e) => {
+    if (e.repeat) return;
     if (inMenu || gameOver) {
        if (e.code === "Space" || e.code === "Enter" || e.code === "KeyR") {
           if (inMenu) { startBGM(); inMenu = false; reset(); } else reset();
