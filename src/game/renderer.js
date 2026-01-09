@@ -43,6 +43,59 @@ export class Renderer {
     return this.height - CONSTANTS.GROUND_H;
   }
 
+  drawTrajectory(state) {
+    const { player, speed } = state;
+    if (!player.charging) return;
+
+    const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
+    const boost = 1 + p * CONSTANTS.CHARGE_MULT;
+    let vy = -CONSTANTS.BASE_JUMP * boost;
+    let x = player.x;
+    let y = player.y;
+
+    const dt = 0.05; // Simulation step
+    const groundY = this.groundY() - CONSTANTS.PLAYER_R;
+    const limit = 2.5; // Simulate up to 2.5 seconds
+
+    this.ctx.save();
+    
+    // Draw Dots
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+
+    for (let t = 0; t < limit; t += dt) {
+      vy += CONSTANTS.G * dt;
+      y += vy * dt;
+      x += speed * dt; // Simulate world moving left relative to player
+
+      if (y >= groundY) {
+        // Landing Spot Indicator
+        this.ctx.beginPath();
+        this.ctx.fillStyle = "#ef4444";
+        this.ctx.arc(x, groundY + CONSTANTS.PLAYER_R, 6, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Crosshair
+        this.ctx.strokeStyle = "#fff";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - 8, groundY + CONSTANTS.PLAYER_R);
+        this.ctx.lineTo(x + 8, groundY + CONSTANTS.PLAYER_R);
+        this.ctx.moveTo(x, groundY + CONSTANTS.PLAYER_R - 8);
+        this.ctx.lineTo(x, groundY + CONSTANTS.PLAYER_R + 8);
+        this.ctx.stroke();
+        break;
+      }
+
+      // Trajectory Dot
+      if (t > 0) { // Don't draw at origin
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    }
+    this.ctx.restore();
+  }
+
   draw(state) {
     const { ctx, width, height } = this;
     const { player, obstacles, particles, footprints, score, timeAlive, distance, shake } = state;
@@ -141,6 +194,9 @@ export class Renderer {
         ctx.globalAlpha = 1;
       }
     }
+    
+    // Draw Trajectory (Behind Particles, In front of Obstacles)
+    this.drawTrajectory(state);
 
     // Particles
     for (const p of particles) {
