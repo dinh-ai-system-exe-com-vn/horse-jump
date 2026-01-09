@@ -134,8 +134,17 @@ export class GameEngine {
       // Actually standard gaps are usually fine, maybe slight increase.
       const lastOb = obstacles[obstacles.length - 1];
       
-      if (lastOb && lastOb.type === 'wall' && lastOb.h > CONSTANTS.BLOCK_SIZE * 2) {
-         gapMin += 300; gapMax += 450;
+      if (lastOb && lastOb.type === 'wall') {
+         const lastH = lastOb.h / CONSTANTS.BLOCK_SIZE;
+         // If previous was tall (>2 blocks), increase gap
+         if (lastH >= 2) {
+             gapMin += 300; gapMax += 450;
+         }
+         // If current is tall (3 blocks) AND previous was short (1 block), ALSO increase gap
+         // This gives time to realize the next one is tall
+         else if (lastH === 1 && rows === 3) {
+             gapMin += 250; gapMax += 400;
+         }
       }
 
       const nextX = (lastOb ? lastOb.x + lastOb.w : width) + rand(gapMin, gapMax);
