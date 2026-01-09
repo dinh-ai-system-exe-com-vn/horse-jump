@@ -80,6 +80,11 @@ export class GameEngine {
     this.onUIUpdate(this.state);
   }
 
+  toggleTrajectory() {
+    this.state.showTrajectory = !this.state.showTrajectory;
+    this.onUIUpdate(this.state);
+  }
+
   // Logic
   spawnObstacle(initial = false) {
     const { obstacles } = this.state;

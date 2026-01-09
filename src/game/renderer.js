@@ -204,7 +204,9 @@ export class Renderer {
     }
     
     // Draw Trajectory (Behind Particles, In front of Obstacles)
-    this.drawTrajectory(state);
+    if (state.showTrajectory) {
+      this.drawTrajectory(state);
+    }
 
     // Particles
     for (const p of particles) {

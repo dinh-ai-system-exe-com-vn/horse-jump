@@ -10,7 +10,8 @@ export default function App() {
     score: 0,
     best: 0,
     gameOver: false,
-    inMenu: true
+    inMenu: true,
+    showTrajectory: true
   });
 
   const handleGameInit = useCallback((eng) => {
@@ -21,7 +22,8 @@ export default function App() {
         score: state.score,
         best: state.best,
         gameOver: state.gameOver,
-        inMenu: state.inMenu
+        inMenu: state.inMenu,
+        showTrajectory: state.showTrajectory
       });
     };
     // Initial sync
@@ -88,7 +90,12 @@ export default function App() {
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <GameCanvas onGameInit={handleGameInit} />
-      <UI gameState={gameState} onStart={handleStart} onRestart={handleRestart} />
+      <UI 
+        gameState={gameState} 
+        onStart={handleStart} 
+        onRestart={handleRestart} 
+        onToggleTrajectory={() => engine?.toggleTrajectory()}
+      />
     </div>
   );
 }

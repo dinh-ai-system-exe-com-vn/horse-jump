@@ -10,6 +10,7 @@ export class GameState {
     this.distance = 0;
     this.gameOver = false;
     this.inMenu = true;
+    this.showTrajectory = true;
     
     // Entities
     this.player = {

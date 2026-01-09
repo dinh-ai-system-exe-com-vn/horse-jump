@@ -1,7 +1,7 @@
 import React from 'react';
 
-export default function UI({ gameState, onStart, onRestart }) {
-  const { score, best, gameOver, inMenu } = gameState;
+export default function UI({ gameState, onStart, onRestart, onToggleTrajectory }) {
+  const { score, best, gameOver, inMenu, showTrajectory } = gameState;
 
   if (inMenu) {
     return (
@@ -9,6 +9,17 @@ export default function UI({ gameState, onStart, onRestart }) {
         <h1 style={styles.title}>NGỰA CHIẾN</h1>
         <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
         <p style={styles.hint}>Giữ chuột/màn hình để nạp lực nhảy.</p>
+        <div style={styles.settings}>
+          <label style={styles.label}>
+            <input 
+              type="checkbox" 
+              checked={showTrajectory} 
+              onChange={onToggleTrajectory} 
+              style={styles.checkbox}
+            />
+            Hiện đường kẻ dự đoán
+          </label>
+        </div>
       </div>
     );
   }
@@ -41,6 +52,22 @@ const styles = {
     color: 'white',
     fontFamily: 'system-ui, sans-serif',
     zIndex: 10,
+  },
+  settings: {
+    marginTop: '20px',
+  },
+  label: {
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    fontSize: '18px',
+    color: '#cbd5e1',
+  },
+  checkbox: {
+    width: '20px',
+    height: '20px',
+    marginRight: '10px',
+    cursor: 'pointer',
   },
   hud: {
     position: 'absolute',
