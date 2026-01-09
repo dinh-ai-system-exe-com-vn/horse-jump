@@ -196,21 +196,59 @@ export class Renderer {
     // Obstacles
     for (const o of obstacles) {
       if (o.type === 'ceiling') {
-         // Draw Ceiling Obstacle (Floating Block)
-         ctx.fillStyle = "#334155"; // Slate color
-         ctx.fillRect(o.x, o.y, o.w, o.h);
+         // Draw Ceiling Obstacle: Industrial Metal Crate
          
-         // Detail: Bottom spikes/rim
-         ctx.fillStyle = "#1e293b";
-         ctx.fillRect(o.x, o.y + o.h - 10, o.w, 10);
+         // 1. Metallic Base Gradient
+         const grad = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
+         grad.addColorStop(0, '#64748b'); // Slate 500
+         grad.addColorStop(0.4, '#94a3b8'); // Slate 400 (Highlight)
+         grad.addColorStop(1, '#334155'); // Slate 700 (Shadow)
+         
+         ctx.fillStyle = grad;
+         ctx.fillRect(o.x, o.y, o.w, o.h);
 
-         // Detail: Rivets
-         ctx.fillStyle = "#94a3b8";
-         for(let i=10; i<o.w; i+=40) {
+         // 2. Industrial Texture (Diagonal Stripes)
+         ctx.save();
+         ctx.beginPath();
+         ctx.rect(o.x, o.y, o.w, o.h);
+         ctx.clip();
+         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+         ctx.lineWidth = 8;
+         for (let i = -o.h; i < o.w; i += 20) {
              ctx.beginPath();
-             ctx.arc(o.x + i, o.y + o.h - 15, 3, 0, Math.PI*2);
-             ctx.fill();
+             ctx.moveTo(o.x + i, o.y - 10);
+             ctx.lineTo(o.x + i + 20, o.y + o.h + 10);
+             ctx.stroke();
          }
+         ctx.restore();
+
+         // 3. Reinforced Frame
+         ctx.strokeStyle = '#1e293b'; // Dark Slate
+         ctx.lineWidth = 4;
+         ctx.strokeRect(o.x + 2, o.y + 2, o.w - 4, o.h - 4);
+         
+         // Inner Highlight Frame
+         ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+         ctx.lineWidth = 2;
+         ctx.strokeRect(o.x + 6, o.y + 6, o.w - 12, o.h - 12);
+
+         // 4. Rivets (Corners)
+         ctx.fillStyle = '#cbd5e1'; // Light Grey
+         const rSize = 4;
+         const margin = 8;
+         // Top-Left
+         ctx.beginPath(); ctx.arc(o.x + margin, o.y + margin, rSize, 0, Math.PI*2); ctx.fill();
+         // Top-Right
+         ctx.beginPath(); ctx.arc(o.x + o.w - margin, o.y + margin, rSize, 0, Math.PI*2); ctx.fill();
+         // Bottom-Left
+         ctx.beginPath(); ctx.arc(o.x + margin, o.y + o.h - margin, rSize, 0, Math.PI*2); ctx.fill();
+         // Bottom-Right
+         ctx.beginPath(); ctx.arc(o.x + o.w - margin, o.y + o.h - margin, rSize, 0, Math.PI*2); ctx.fill();
+         
+         // 5. Caution Stripe (Bottom Edge)
+         ctx.fillStyle = '#eab308'; // Yellow
+         ctx.fillRect(o.x + 4, o.y + o.h - 6, o.w - 8, 2);
+
       } 
       else if (assets.fence.complete && assets.fence.naturalWidth > 0) {
         const size = CONSTANTS.BLOCK_SIZE;
