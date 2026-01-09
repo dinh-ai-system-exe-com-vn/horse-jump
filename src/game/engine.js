@@ -12,6 +12,23 @@ export class GameEngine {
     this.running = true;
     this.tPrev = performance.now();
     this.reqId = null;
+    this.trueScore = 0;
+
+    // --- DevTool Attack Prevention ---
+    // Score Tampering Protection: Redefine score to detect external changes
+    // Moved to constructor to ensure it's set up only once and persists.
+    let internalScore = 0;
+    Object.defineProperty(this.state, 'score', {
+      get: () => internalScore,
+      set: (val) => {
+        // If trueScore is being reset (0), we allow score to follow.
+        // Otherwise, mismatched set operations trigger cheat detection.
+        if (val !== this.trueScore) {
+          this.state.isCheater = true;
+        }
+        internalScore = val;
+      }
+    });
 
     this.spawnObstacle(true);
     this.isLooping = false;
@@ -73,15 +90,44 @@ export class GameEngine {
 
   startGame() {
     audioManager.resume();
+    
+    // --- Anti-Debugger Loop ---
+    // Restart loop if it stopped (it stops on gameOver)
+    const antiDebugger = () => {
+      if (this.state.gameOver) return;
+      (function() {}.constructor("debugger")());
+      setTimeout(antiDebugger, 100);
+    };
+    // Only start if not already game over (e.g. initial start)
+    // Actually, startGame implies we are starting, so gameOver will be false soon.
+    // We call antiDebugger AFTER resetting state to ensure gameOver is false.
+
     this.state.inMenu = false;
-    this.state.reset();
+    
+    // CRITICAL: Reset trueScore BEFORE state.reset() triggers the setter
+    this.trueScore = 0; 
+    this.state.reset(); 
+    
+    antiDebugger();
+
     this.spawnObstacle(true);
     this.onUIUpdate(this.state);
     this.start(); // Restart loop
   }
 
   resetGame() {
+    // CRITICAL: Reset trueScore BEFORE state.reset() triggers the setter
+    this.trueScore = 0;
     this.state.reset();
+    
+    // Restart anti-debugger since it stops on gameOver
+    const antiDebugger = () => {
+      if (this.state.gameOver) return;
+      (function() {}.constructor("debugger")());
+      setTimeout(antiDebugger, 100);
+    };
+    antiDebugger();
+
     this.spawnObstacle(true);
     this.onUIUpdate(this.state);
     this.start(); // Restart loop
@@ -183,8 +229,36 @@ export class GameEngine {
     if (!this.running || state.inMenu) return;
 
     if (!state.gameOver) {
+      // --- Anti-Cheat Checks ---
+      
+      // 1. Detect if DevTools is open (simple check via outer/inner height/width)
+      const threshold = 160;
+      const isDevToolsOpen = (window.outerWidth - window.innerWidth > threshold) || 
+                             (window.outerHeight - window.innerHeight > threshold);
+      
+      if (isDevToolsOpen) {
+          state.isCheater = true;
+      }
+
+      if (state.score !== this.trueScore) {
+        state.isCheater = true;
+      }
+      
+      const expectedSpeed = CONSTANTS.SPEED_BASE + this.trueScore * CONSTANTS.SPEED_GAIN;
+      // Allow a small buffer for floating point or frame delays, but not much
+      if (state.speed > expectedSpeed + 20 && !state.isCheater) {
+         state.isCheater = true;
+      }
+
+      // --- Punishment ---
+      if (state.isCheater) {
+        state.speed = 3000; // Impossible speed
+        state.shake = 50;   // Constant earthquake
+      } else {
+        state.speed = expectedSpeed;
+      }
+      
       state.timeAlive += dt;
-      state.speed = CONSTANTS.SPEED_BASE + state.score * CONSTANTS.SPEED_GAIN;
       state.distance += state.speed * dt;
 
       // Particles
@@ -248,7 +322,8 @@ export class GameEngine {
         o.x -= state.speed * dt;
         if (!o.passed && o.x + o.w < player.x - CONSTANTS.PLAYER_R) {
           o.passed = true;
-          state.score += 1;
+          this.trueScore += 1; // Secure increment
+          state.score = this.trueScore; // Sync back to state for UI
           // Trigger UI update only on score change to avoid React thrashing
           this.onUIUpdate(state); 
         }

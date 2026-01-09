@@ -10,7 +10,8 @@ export class GameState {
     this.distance = 0;
     this.gameOver = false;
     this.inMenu = true;
-    this.showTrajectory = true;
+    this.showTrajectory = false;
+    this.isCheater = false;
     
     // Entities
     this.player = {
@@ -44,6 +45,7 @@ export class GameState {
     this.speed = CONSTANTS.SPEED_BASE;
     this.shake = 0;
     this.distance = 0;
+    this.isCheater = false;
 
     this.player.x = 140;
     // Note: Y reset depends on innerHeight, handled in GameEngine or resized
