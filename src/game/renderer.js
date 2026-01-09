@@ -7,7 +7,7 @@ export class Renderer {
     this.ctx = canvas.getContext('2d');
     this.width = 0;
     this.height = 0;
-    
+
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }
@@ -27,7 +27,7 @@ export class Renderer {
     this.canvas.height = Math.floor(winH * dpr);
     this.canvas.style.width = winW + "px";
     this.canvas.style.height = winH + "px";
-    
+
     // Apply scale to the context
     // The physics and drawing logic continue to use "Logical Coordinates"
     // The context automatically maps them to "Physical Pixels"
@@ -45,25 +45,25 @@ export class Renderer {
 
   drawTrajectory(state) {
     const { player, speed } = state;
-    
+
     let vy, x = player.x, y = player.y;
 
     if (player.charging) {
-       const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
-       const boost = 1 + p * CONSTANTS.CHARGE_MULT;
-       vy = -CONSTANTS.BASE_JUMP * boost;
+      const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
+      const boost = 1 + p * CONSTANTS.CHARGE_MULT;
+      vy = -CONSTANTS.BASE_JUMP * boost;
     } else if (!player.onGround) {
-       vy = player.vy;
+      vy = player.vy;
     } else {
-       return;
+      return;
     }
 
-    const dt = 0.05; 
+    const dt = 0.05;
     const groundY = this.groundY() - CONSTANTS.PLAYER_R;
-    const limit = 2.5; 
+    const limit = 2.5;
 
     this.ctx.save();
-    
+
     // Optimization: Batch all dots into one path
     this.ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
     this.ctx.beginPath();
@@ -74,7 +74,7 @@ export class Renderer {
     for (let t = 0; t < limit; t += dt) {
       vy += CONSTANTS.G * dt;
       y += vy * dt;
-      x += speed * dt; 
+      x += speed * dt;
 
       if (y >= groundY) {
         landed = true;
@@ -82,7 +82,7 @@ export class Renderer {
         break;
       }
 
-      if (t > 0) { 
+      if (t > 0) {
         this.ctx.moveTo(x + 3, y);
         this.ctx.arc(x, y, 3, 0, Math.PI * 2);
       }
@@ -91,19 +91,19 @@ export class Renderer {
 
     // Draw Landing Marker
     if (landed) {
-        this.ctx.beginPath();
-        this.ctx.fillStyle = "#ef4444";
-        this.ctx.arc(landX, groundY + CONSTANTS.PLAYER_R, 6, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        this.ctx.strokeStyle = "#fff";
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(landX - 8, groundY + CONSTANTS.PLAYER_R);
-        this.ctx.lineTo(landX + 8, groundY + CONSTANTS.PLAYER_R);
-        this.ctx.moveTo(landX, groundY + CONSTANTS.PLAYER_R - 8);
-        this.ctx.lineTo(landX, groundY + CONSTANTS.PLAYER_R + 8);
-        this.ctx.stroke();
+      this.ctx.beginPath();
+      this.ctx.fillStyle = "#ef4444";
+      this.ctx.arc(landX, groundY + CONSTANTS.PLAYER_R, 6, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.strokeStyle = "#fff";
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(landX - 8, groundY + CONSTANTS.PLAYER_R);
+      this.ctx.lineTo(landX + 8, groundY + CONSTANTS.PLAYER_R);
+      this.ctx.moveTo(landX, groundY + CONSTANTS.PLAYER_R - 8);
+      this.ctx.lineTo(landX, groundY + CONSTANTS.PLAYER_R + 8);
+      this.ctx.stroke();
     }
 
     this.ctx.restore();
@@ -120,28 +120,28 @@ export class Renderer {
     }
 
     ctx.save();
-    ctx.clearRect(0, 0, width, height); 
+    ctx.clearRect(0, 0, width, height);
     ctx.translate(sx, sy);
 
     // BG Gradient System
     let cTop, cBot;
-    
+
     if (score < 10) {
-        // Phase 1: Calm Night (Deep Slate -> Indigo)
-        cTop = "#020617"; 
-        cBot = "#1e1b4b"; 
+      // Phase 1: Calm Night (Deep Slate -> Indigo)
+      cTop = "#020617";
+      cBot = "#1e1b4b";
     } else if (score < 25) {
-        // Phase 2: Mystic Pressure (Deep Indigo -> Vivid Purple)
-        cTop = "#1e1b4b"; 
-        cBot = "#701a75"; 
+      // Phase 2: Mystic Pressure (Deep Indigo -> Vivid Purple)
+      cTop = "#1e1b4b";
+      cBot = "#701a75";
     } else if (score < 50) {
-        // Phase 3: High Danger (Dark Burgundy -> Intense Rose)
-        cTop = "#4a0404"; 
-        cBot = "#be123c"; 
+      // Phase 3: High Danger (Dark Burgundy -> Intense Rose)
+      cTop = "#4a0404";
+      cBot = "#be123c";
     } else {
-        // Phase 4: The Void (Pitch Black -> Hellish Red)
-        cTop = "#000000"; 
-        cBot = "#991b1b"; 
+      // Phase 4: The Void (Pitch Black -> Hellish Red)
+      cTop = "#000000";
+      cBot = "#991b1b";
     }
 
     const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
@@ -196,60 +196,60 @@ export class Renderer {
     // Obstacles
     for (const o of obstacles) {
       if (o.type === 'ceiling') {
-         // Draw Ceiling Obstacle: Industrial Metal Crate
-         
-         // 1. Metallic Base Gradient
-         const grad = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
-         grad.addColorStop(0, '#64748b'); // Slate 500
-         grad.addColorStop(0.4, '#94a3b8'); // Slate 400 (Highlight)
-         grad.addColorStop(1, '#334155'); // Slate 700 (Shadow)
-         
-         ctx.fillStyle = grad;
-         ctx.fillRect(o.x, o.y, o.w, o.h);
+        // Draw Ceiling Obstacle: Industrial Metal Crate
 
-         // 2. Industrial Texture (Diagonal Stripes)
-         ctx.save();
-         ctx.beginPath();
-         ctx.rect(o.x, o.y, o.w, o.h);
-         ctx.clip();
-         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-         ctx.lineWidth = 8;
-         for (let i = -o.h; i < o.w; i += 20) {
-             ctx.beginPath();
-             ctx.moveTo(o.x + i, o.y - 10);
-             ctx.lineTo(o.x + i + 20, o.y + o.h + 10);
-             ctx.stroke();
-         }
-         ctx.restore();
+        // 1. Metallic Base Gradient
+        const grad = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
+        grad.addColorStop(0, '#64748b'); // Slate 500
+        grad.addColorStop(0.4, '#94a3b8'); // Slate 400 (Highlight)
+        grad.addColorStop(1, '#334155'); // Slate 700 (Shadow)
 
-         // 3. Reinforced Frame
-         ctx.strokeStyle = '#1e293b'; // Dark Slate
-         ctx.lineWidth = 4;
-         ctx.strokeRect(o.x + 2, o.y + 2, o.w - 4, o.h - 4);
-         
-         // Inner Highlight Frame
-         ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-         ctx.lineWidth = 2;
-         ctx.strokeRect(o.x + 6, o.y + 6, o.w - 12, o.h - 12);
+        ctx.fillStyle = grad;
+        ctx.fillRect(o.x, o.y, o.w, o.h);
 
-         // 4. Rivets (Corners)
-         ctx.fillStyle = '#cbd5e1'; // Light Grey
-         const rSize = 4;
-         const margin = 8;
-         // Top-Left
-         ctx.beginPath(); ctx.arc(o.x + margin, o.y + margin, rSize, 0, Math.PI*2); ctx.fill();
-         // Top-Right
-         ctx.beginPath(); ctx.arc(o.x + o.w - margin, o.y + margin, rSize, 0, Math.PI*2); ctx.fill();
-         // Bottom-Left
-         ctx.beginPath(); ctx.arc(o.x + margin, o.y + o.h - margin, rSize, 0, Math.PI*2); ctx.fill();
-         // Bottom-Right
-         ctx.beginPath(); ctx.arc(o.x + o.w - margin, o.y + o.h - margin, rSize, 0, Math.PI*2); ctx.fill();
-         
-         // 5. Caution Stripe (Bottom Edge)
-         ctx.fillStyle = '#eab308'; // Yellow
-         ctx.fillRect(o.x + 4, o.y + o.h - 6, o.w - 8, 2);
+        // 2. Industrial Texture (Diagonal Stripes)
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(o.x, o.y, o.w, o.h);
+        ctx.clip();
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.lineWidth = 8;
+        for (let i = -o.h; i < o.w; i += 20) {
+          ctx.beginPath();
+          ctx.moveTo(o.x + i, o.y - 10);
+          ctx.lineTo(o.x + i + 20, o.y + o.h + 10);
+          ctx.stroke();
+        }
+        ctx.restore();
 
-      } 
+        // 3. Reinforced Frame
+        ctx.strokeStyle = '#1e293b'; // Dark Slate
+        ctx.lineWidth = 4;
+        ctx.strokeRect(o.x + 2, o.y + 2, o.w - 4, o.h - 4);
+
+        // Inner Highlight Frame
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(o.x + 6, o.y + 6, o.w - 12, o.h - 12);
+
+        // 4. Rivets (Corners)
+        ctx.fillStyle = '#cbd5e1'; // Light Grey
+        const rSize = 4;
+        const margin = 8;
+        // Top-Left
+        ctx.beginPath(); ctx.arc(o.x + margin, o.y + margin, rSize, 0, Math.PI * 2); ctx.fill();
+        // Top-Right
+        ctx.beginPath(); ctx.arc(o.x + o.w - margin, o.y + margin, rSize, 0, Math.PI * 2); ctx.fill();
+        // Bottom-Left
+        ctx.beginPath(); ctx.arc(o.x + margin, o.y + o.h - margin, rSize, 0, Math.PI * 2); ctx.fill();
+        // Bottom-Right
+        ctx.beginPath(); ctx.arc(o.x + o.w - margin, o.y + o.h - margin, rSize, 0, Math.PI * 2); ctx.fill();
+
+        // 5. Caution Stripe (Bottom Edge)
+        ctx.fillStyle = '#eab308'; // Yellow
+        ctx.fillRect(o.x + 4, o.y + o.h - 6, o.w - 8, 2);
+
+      }
       else if (assets.fence.complete && assets.fence.naturalWidth > 0) {
         const size = CONSTANTS.BLOCK_SIZE;
         const cols = o.w / size;
@@ -284,7 +284,7 @@ export class Renderer {
         ctx.globalAlpha = 1;
       }
     }
-    
+
     if (state.showTrajectory) {
       this.drawTrajectory(state);
     }
@@ -301,7 +301,7 @@ export class Renderer {
 
     // Player Context
     ctx.save();
-    
+
     // Physical exhaustion effect (shivering)
     let shiverX = 0, shiverY = 0;
     if (state.deathCount >= 50) {
@@ -331,19 +331,20 @@ export class Renderer {
     const exhaustionTilt = Math.min(0.3, (state.deathCount / 100));
     ctx.rotate(rot + exhaustionTilt);
 
-    if (assets.horse.complete && assets.horse.naturalWidth > 0) {
+    const horseAsset = assets.horses[player.horseSkin] || assets.horses['default'];
+    if (horseAsset && horseAsset.complete && horseAsset.naturalWidth > 0) {
       const drawSize = 48;
       const offset = drawSize / 2;
-      
+
       // Visual decay based on deathCount (Maxed at 100)
-      const decay = Math.min(state.deathCount, 100) / 100; 
-      const gray = decay * 90; 
-      const bright = 100 - (decay * 50); 
-      const sepia = decay * 40; 
+      const decay = Math.min(state.deathCount, 100) / 100;
+      const gray = decay * 90;
+      const bright = 100 - (decay * 50);
+      const sepia = decay * 40;
 
       ctx.save();
       ctx.filter = `grayscale(${gray}%) brightness(${bright}%) sepia(${sepia}%)`;
-      ctx.drawImage(assets.horse, -offset, -offset, drawSize, drawSize);
+      ctx.drawImage(horseAsset, -offset, -offset, drawSize, drawSize);
       ctx.restore();
 
       // Procedural Scars and Dirt (Starts at 25 deaths)
@@ -372,30 +373,31 @@ export class Renderer {
         ctx.restore();
       }
 
-      if (!player.onGround && assets.wings.complete && assets.wings.naturalWidth > 0) {
+      const wingsAsset = assets.wings[player.wingsSkin] || assets.wings['default'];
+      if (!player.onGround && wingsAsset && wingsAsset.complete && wingsAsset.naturalWidth > 0) {
         ctx.save();
-        ctx.translate(-15, -12); 
+        ctx.translate(-15, -12);
         const flapSpeed = player.vy < 0 ? 25 : 12;
         const flapAngle = Math.sin(timeAlive * flapSpeed) * 0.5;
         ctx.rotate(flapAngle - 0.1);
-        
+
         // Tattered wings: reaches 0.2 alpha at 100 deaths
         ctx.globalAlpha = Math.max(0.2, 1 - (state.deathCount * 0.008));
 
         // Gradual Redness: Starts at 25 deaths, reaches max at 100 deaths
         if (state.deathCount >= 25) {
-          const redness = Math.min(1, (state.deathCount - 25) / 75); 
+          const redness = Math.min(1, (state.deathCount - 25) / 75);
           // All filter values now scale with 'redness' to ensure a smooth transition
           const sepiaVal = redness;
           const saturateVal = 1 + redness * 20;
           const hueVal = -65 * redness;
           const brightVal = 1 - redness * 0.3;
           const grayVal = redness * 0.5;
-          
+
           ctx.filter = `grayscale(${grayVal}) sepia(${sepiaVal}) saturate(${saturateVal}) hue-rotate(${hueVal}deg) brightness(${brightVal})`;
         }
 
-        ctx.drawImage(assets.wings, -15, -10, 30, 20); 
+        ctx.drawImage(wingsAsset, -15, -10, 30, 20);
         ctx.restore();
       }
 
@@ -403,24 +405,24 @@ export class Renderer {
         // ... (charging effects logic unchanged)
         const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
         ctx.globalCompositeOperation = "lighter";
-        
+
         const parts = 5 + Math.floor(p * 10);
         ctx.fillStyle = `rgba(255, 230, 100, ${0.5 + p * 0.5})`;
-        for(let i=0; i<parts; i++) {
-            const px = (Math.random() - 0.5) * 40;
-            const py = (Math.random() - 0.5) * 40;
-            const ph = 10 + Math.random() * 20 * p;
-            ctx.fillRect(px, py - ph/2, 2, ph);
+        for (let i = 0; i < parts; i++) {
+          const px = (Math.random() - 0.5) * 40;
+          const py = (Math.random() - 0.5) * 40;
+          const ph = 10 + Math.random() * 20 * p;
+          ctx.fillRect(px, py - ph / 2, 2, ph);
         }
 
         ctx.beginPath();
         const auraR = 25 + p * 15;
         for (let i = 0; i <= 360; i += 20) {
-           const rad = (i * Math.PI) / 180;
-           const r = auraR + (Math.random() - 0.5) * 10 * p; 
-           const ax = Math.cos(rad) * r;
-           const ay = Math.sin(rad) * r;
-           if (i===0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
+          const rad = (i * Math.PI) / 180;
+          const r = auraR + (Math.random() - 0.5) * 10 * p;
+          const ax = Math.cos(rad) * r;
+          const ay = Math.sin(rad) * r;
+          if (i === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
         }
         ctx.closePath();
         const grad = ctx.createRadialGradient(0, 0, 15, 0, 0, auraR + 10);
@@ -431,14 +433,14 @@ export class Renderer {
         ctx.fill();
 
         if (p > 0.8 && Math.random() < 0.5) {
-            ctx.strokeStyle = "#e0f2fe"; ctx.lineWidth = 2;
-            ctx.beginPath();
-            let lx = (Math.random() - 0.5) * 50; let ly = (Math.random() - 0.5) * 50;
-            ctx.moveTo(lx, ly);
-            for(let k=0; k<3; k++) { lx += (Math.random() - 0.5) * 20; ly += (Math.random() - 0.5) * 20; ctx.lineTo(lx, ly); }
-            ctx.stroke();
+          ctx.strokeStyle = "#e0f2fe"; ctx.lineWidth = 2;
+          ctx.beginPath();
+          let lx = (Math.random() - 0.5) * 50; let ly = (Math.random() - 0.5) * 50;
+          ctx.moveTo(lx, ly);
+          for (let k = 0; k < 3; k++) { lx += (Math.random() - 0.5) * 20; ly += (Math.random() - 0.5) * 20; ctx.lineTo(lx, ly); }
+          ctx.stroke();
         }
-        ctx.globalCompositeOperation = "source-over"; 
+        ctx.globalCompositeOperation = "source-over";
       }
 
       // Eyes logic - Starts at 75 deaths
@@ -455,7 +457,7 @@ export class Renderer {
         ctx.beginPath(); ctx.arc(ex, ey, 4, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "#fff";
         ctx.beginPath(); ctx.arc(ex, ey, 2, 0, Math.PI * 2); ctx.fill();
-        
+
         ctx.strokeStyle = `rgba(0, 0, 0, ${0.2 + eyeRedness})`;
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(ex, ey + 4, 3, 0.2, Math.PI - 0.2); ctx.stroke();

@@ -1,7 +1,97 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { CONSTANTS } from '../game/constants.js';
+import { assets } from '../game/assets.js';
 
-export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, showSettings, onToggleSettings }) {
-  const { score, best, deathCount, gameOver, inMenu, showTrajectory } = gameState;
+const CharacterPreview = ({ horseSkin, wingsSkin }) => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationId;
+
+    const render = (time) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2 + 5;
+      const horseAsset = assets.horses[horseSkin] || assets.horses['default'];
+      const wingsAsset = assets.wings[wingsSkin] || assets.wings['default'];
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+
+      // Floating animation
+      const floatY = Math.sin(time * 0.005) * 3;
+      ctx.translate(0, floatY);
+
+      // Draw Wings (if loaded)
+      if (wingsAsset && wingsAsset.complete && wingsAsset.naturalWidth > 0) {
+        ctx.save();
+        ctx.translate(-15, -12);
+        const flapAngle = Math.sin(time * 0.01) * 0.4;
+        ctx.rotate(flapAngle - 0.1);
+        ctx.drawImage(wingsAsset, -15, -10, 30, 20);
+        ctx.restore();
+      }
+
+      // Draw Horse (if loaded)
+      if (horseAsset && horseAsset.complete && horseAsset.naturalWidth > 0) {
+        ctx.drawImage(horseAsset, -24, -24, 48, 48);
+      }
+
+      ctx.restore();
+      animationId = requestAnimationFrame(render);
+    };
+
+    animationId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(animationId);
+  }, [horseSkin, wingsSkin]);
+
+  return (
+    <div style={styles.previewBox}>
+      <canvas
+        ref={canvasRef}
+        width={100}
+        height={100}
+        style={styles.previewCanvas}
+      />
+      <div style={styles.previewLabel}>Xem trước</div>
+    </div>
+  );
+};
+
+export default function UI({
+  gameState,
+  onStart,
+  onRestart,
+  onToggleTrajectory,
+  showSettings,
+  onToggleSettings,
+  onSkinChange
+}) {
+  const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin } = gameState;
+
+  const SkinSelector = ({ type, current, skins, onChange }) => (
+    <div style={styles.skinGroup}>
+      <h3 style={styles.skinLabel}>{type === 'horse' ? 'Chọn Ngựa' : 'Chọn Cánh'}</h3>
+      <div style={styles.skinList}>
+        {skins.map(skin => (
+          <div
+            key={skin.id}
+            style={{
+              ...styles.skinItem,
+              borderColor: current === skin.id ? '#8b5cf6' : '#334155',
+              backgroundColor: current === skin.id ? 'rgba(139, 92, 246, 0.2)' : 'rgba(30, 41, 59, 0.5)'
+            }}
+            onClick={() => onChange(type, skin.id)}
+          >
+            {skin.name}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -10,6 +100,24 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
         <div style={styles.overlay}>
           <h1 style={styles.title}>NGỰA CHIẾN</h1>
           <p style={styles.subText}>Số lần tử trận: {deathCount}</p>
+
+          <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
+
+          <div style={styles.selectionContainer}>
+            <SkinSelector
+              type="horse"
+              current={horseSkin}
+              skins={CONSTANTS.HORSE_SKINS}
+              onChange={onSkinChange}
+            />
+            <SkinSelector
+              type="wings"
+              current={wingsSkin}
+              skins={CONSTANTS.WINGS_SKINS}
+              onChange={onSkinChange}
+            />
+          </div>
+
           <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
           <p style={styles.hint}>Giữ chuột/màn hình để nạp lực nhảy.</p>
         </div>
@@ -17,7 +125,7 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
 
       {gameOver && (
         <div style={styles.overlay}>
-          <h1 style={{...styles.title, color: '#ef4444'}}>GAME OVER</h1>
+          <h1 style={{ ...styles.title, color: '#ef4444' }}>GAME OVER</h1>
           <p style={styles.scoreText}>Điểm: {score}</p>
           <p style={styles.subText}>Kỷ lục: {best}</p>
           <p style={styles.subText}>Tổng số lần chết: {deathCount}</p>
@@ -27,16 +135,16 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
 
       {!inMenu && !gameOver && (
         <div style={styles.hud}>
-          Score: {score} &nbsp; Best: {best} &nbsp; <span style={{fontSize: '16px', opacity: 0.7}}>Deaths: {deathCount}</span>
+          Score: {score} &nbsp; Best: {best} &nbsp; <span style={{ fontSize: '16px', opacity: 0.7 }}>Deaths: {deathCount}</span>
         </div>
       )}
 
-      {/* Settings Button (Chibi Style) */}
+      {/* Settings Button */}
       <button style={styles.settingsBtn} onClick={onToggleSettings}>
         ⚙️
       </button>
 
-      {/* Settings Modal (Chibi Style) */}
+      {/* Settings Modal */}
       {showSettings && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
@@ -45,16 +153,32 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
               <button style={styles.closeBtn} onClick={onToggleSettings}>✖</button>
             </div>
             <div style={styles.modalBody}>
-              <div style={styles.chibiFace}>
-                <div style={styles.eyeLeft}></div>
-                <div style={styles.eyeRight}></div>
-                <div style={styles.mouth}></div>
+              <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
+
+              <div style={{ width: '100%', marginBottom: '20px' }}>
+                <SkinSelector
+                  type="horse"
+                  current={horseSkin}
+                  skins={CONSTANTS.HORSE_SKINS}
+                  onChange={onSkinChange}
+                />
+                <SkinSelector
+                  type="wings"
+                  current={wingsSkin}
+                  skins={CONSTANTS.WINGS_SKINS}
+                  onChange={onSkinChange}
+                />
               </div>
-              <label style={styles.label}>
-                <input 
-                  type="checkbox" 
-                  checked={showTrajectory} 
-                  onChange={onToggleTrajectory} 
+
+              <label style={styles.label} htmlFor="trajectory-checkbox">
+                <input
+                  id="trajectory-checkbox"
+                  type="checkbox"
+                  checked={showTrajectory}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleTrajectory();
+                  }}
                   style={styles.checkbox}
                 />
                 Hiện đường kẻ dự đoán
@@ -66,6 +190,7 @@ export default function UI({ gameState, onStart, onRestart, onToggleTrajectory, 
     </>
   );
 }
+
 
 const styles = {
   overlay: {
@@ -133,6 +258,73 @@ const styles = {
     fontSize: '20px',
     marginBottom: '20px',
   },
+  selectionContainer: {
+    display: 'flex',
+    gap: '20px',
+    marginBottom: '30px',
+    width: '90%',
+    maxWidth: '600px',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  skinGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  skinLabel: {
+    fontSize: '16px',
+    fontWeight: 'bold',
+    color: '#a5b4fc',
+    margin: '0',
+    textTransform: 'uppercase',
+  },
+  skinList: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  skinItem: {
+    padding: '8px 12px',
+    borderRadius: '12px',
+    border: '2px solid transparent',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    color: '#fff',
+    transition: 'all 0.2s',
+    userSelect: 'none',
+    textAlign: 'center',
+    flex: '1 1 auto',
+    minWidth: '80px',
+  },
+  previewBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '20px',
+    padding: '16px',
+    background: 'rgba(30, 41, 59, 0.6)',
+    borderRadius: '32px',
+    border: '3px solid rgba(139, 92, 246, 0.4)',
+    boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+    width: '140px',
+    height: '140px',
+    justifyContent: 'center',
+  },
+  previewCanvas: {
+    filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.5))',
+  },
+  previewLabel: {
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: '#818cf8',
+    textTransform: 'uppercase',
+    marginTop: '5px',
+    letterSpacing: '1px',
+  },
   // Settings Button
   settingsBtn: {
     position: 'absolute',
@@ -163,7 +355,8 @@ const styles = {
     zIndex: 30,
   },
   modal: {
-    width: '320px',
+    width: '420px',
+    maxWidth: '90vw',
     backgroundColor: '#1e1b4b', // Deep Indigo
     borderRadius: '32px',
     border: '4px solid #4338ca',

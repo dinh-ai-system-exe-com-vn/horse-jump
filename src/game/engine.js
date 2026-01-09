@@ -56,7 +56,7 @@ export class GameEngine {
   press() {
     if (this.state.inMenu || this.state.gameOver) return;
     const { player } = this.state;
-    
+
     if (!player.onGround && player.canDoubleJump) {
       player.vy = -CONSTANTS.BASE_JUMP * 0.9;
       player.canDoubleJump = false;
@@ -75,7 +75,7 @@ export class GameEngine {
   release() {
     if (this.state.inMenu || this.state.gameOver) return;
     const { player } = this.state;
-    
+
     if (player.charging && player.onGround) {
       const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
       const boost = 1 + p * CONSTANTS.CHARGE_MULT;
@@ -90,12 +90,12 @@ export class GameEngine {
 
   startGame() {
     audioManager.resume();
-    
+
     // --- Anti-Debugger Loop ---
     // Restart loop if it stopped (it stops on gameOver)
     const antiDebugger = () => {
       if (this.state.gameOver) return;
-      (function() {}.constructor("debugger")());
+      (function () { }.constructor("debugger")());
       setTimeout(antiDebugger, 100);
     };
     // Only start if not already game over (e.g. initial start)
@@ -103,11 +103,11 @@ export class GameEngine {
     // We call antiDebugger AFTER resetting state to ensure gameOver is false.
 
     this.state.inMenu = false;
-    
+
     // CRITICAL: Reset trueScore BEFORE state.reset() triggers the setter
-    this.trueScore = 0; 
-    this.state.reset(); 
-    
+    this.trueScore = 0;
+    this.state.reset();
+
     antiDebugger();
 
     this.spawnObstacle(true);
@@ -119,11 +119,11 @@ export class GameEngine {
     // CRITICAL: Reset trueScore BEFORE state.reset() triggers the setter
     this.trueScore = 0;
     this.state.reset();
-    
+
     // Restart anti-debugger since it stops on gameOver
     const antiDebugger = () => {
       if (this.state.gameOver) return;
-      (function() {}.constructor("debugger")());
+      (function () { }.constructor("debugger")());
       setTimeout(antiDebugger, 100);
     };
     antiDebugger();
@@ -133,14 +133,19 @@ export class GameEngine {
     this.start(); // Restart loop
   }
 
+  toggleTrajectory() {
+    this.state.showTrajectory = !this.state.showTrajectory;
+    this.onUIUpdate(this.state);
+  }
+
   // Logic
   spawnObstacle(initial = false) {
     const { obstacles } = this.state;
     const width = this.renderer.width; // Use renderer's width which tracks window
-    
+
     // Logic: 25% chance for a "Ceiling" obstacle (Must run under), but never as the first one
     const isCeiling = !initial && Math.random() < 0.25;
-    
+
     let type = isCeiling ? 'ceiling' : 'wall';
     let x, w, h, y;
     let rows = 0; // Default 0 for non-wall types
@@ -148,35 +153,35 @@ export class GameEngine {
     const groundY = this.renderer.groundY();
 
     if (type === 'ceiling') {
-        // Ceiling Logic: Floating block low enough to hit head if jumping
-        // Player R=18, Height~36. Ground clearance needs to be > 40.
-        // Let's set clearance to ~70.
-        const clearance = 70;
-        h = 60; // Thickness of the block
-        w = rand(150, 400); // Can be long
-        y = groundY - clearance - h;
+      // Ceiling Logic: Floating block low enough to hit head if jumping
+      // Player R=18, Height~36. Ground clearance needs to be > 40.
+      // Let's set clearance to ~70.
+      const clearance = 70;
+      h = 60; // Thickness of the block
+      w = rand(150, 400); // Can be long
+      y = groundY - clearance - h;
     } else {
-        // Wall Logic (Existing)
-        const cols = Math.floor(Math.random() * 2) + 1;
-        
-        // Weighted Height Logic:
-        // 50% -> Height 1
-        // 30% -> Height 2
-        // 20% -> Height 3 (Increased)
-        const r = Math.random();
-        if (r < 0.5) rows = 1;
-        else if (r < 0.8) rows = 2;
-        else rows = 3;
+      // Wall Logic (Existing)
+      const cols = Math.floor(Math.random() * 2) + 1;
 
-        const lastOb = obstacles[obstacles.length - 1];
-        if (lastOb && lastOb.type === 'wall') {
-            const lastRows = lastOb.h / CONSTANTS.BLOCK_SIZE;
-            if (lastRows >= 2 && rows === lastRows) rows = 1;
-        }
+      // Weighted Height Logic:
+      // 50% -> Height 1
+      // 30% -> Height 2
+      // 20% -> Height 3 (Increased)
+      const r = Math.random();
+      if (r < 0.5) rows = 1;
+      else if (r < 0.8) rows = 2;
+      else rows = 3;
 
-        w = cols * CONSTANTS.BLOCK_SIZE;
-        h = rows * CONSTANTS.BLOCK_SIZE;
-        y = groundY - h;
+      const lastOb = obstacles[obstacles.length - 1];
+      if (lastOb && lastOb.type === 'wall') {
+        const lastRows = lastOb.h / CONSTANTS.BLOCK_SIZE;
+        if (lastRows >= 2 && rows === lastRows) rows = 1;
+      }
+
+      w = cols * CONSTANTS.BLOCK_SIZE;
+      h = rows * CONSTANTS.BLOCK_SIZE;
+      y = groundY - h;
     }
 
     if (initial) {
@@ -188,18 +193,18 @@ export class GameEngine {
       // If previous was ceiling, we might need more time to land? 
       // Actually standard gaps are usually fine, maybe slight increase.
       const lastOb = obstacles[obstacles.length - 1];
-      
+
       if (lastOb && lastOb.type === 'wall') {
-         const lastH = lastOb.h / CONSTANTS.BLOCK_SIZE;
-         // If previous was tall (>2 blocks), increase gap
-         if (lastH >= 2) {
-             gapMin += 300; gapMax += 450;
-         }
-         // If current is tall (3 blocks) AND previous was short (1 block), ALSO increase gap
-         // This gives time to realize the next one is tall
-         else if (lastH === 1 && rows === 3) {
-             gapMin += 250; gapMax += 400;
-         }
+        const lastH = lastOb.h / CONSTANTS.BLOCK_SIZE;
+        // If previous was tall (>2 blocks), increase gap
+        if (lastH >= 2) {
+          gapMin += 300; gapMax += 450;
+        }
+        // If current is tall (3 blocks) AND previous was short (1 block), ALSO increase gap
+        // This gives time to realize the next one is tall
+        else if (lastH === 1 && rows === 3) {
+          gapMin += 250; gapMax += 400;
+        }
       }
 
       const nextX = (lastOb ? lastOb.x + lastOb.w : width) + rand(gapMin, gapMax);
@@ -230,24 +235,24 @@ export class GameEngine {
 
     if (!state.gameOver) {
       // --- Anti-Cheat Checks ---
-      
+
       // 1. Detect if DevTools is open (simple check via outer/inner height/width)
       const threshold = 160;
-      const isDevToolsOpen = (window.outerWidth - window.innerWidth > threshold) || 
-                             (window.outerHeight - window.innerHeight > threshold);
-      
+      const isDevToolsOpen = (window.outerWidth - window.innerWidth > threshold) ||
+        (window.outerHeight - window.innerHeight > threshold);
+
       if (isDevToolsOpen) {
-          state.isCheater = true;
+        state.isCheater = true;
       }
 
       if (state.score !== this.trueScore) {
         state.isCheater = true;
       }
-      
+
       const expectedSpeed = CONSTANTS.SPEED_BASE + this.trueScore * CONSTANTS.SPEED_GAIN;
       // Allow a small buffer for floating point or frame delays, but not much
       if (state.speed > expectedSpeed + 20 && !state.isCheater) {
-         state.isCheater = true;
+        state.isCheater = true;
       }
 
       // --- Punishment ---
@@ -257,7 +262,7 @@ export class GameEngine {
       } else {
         state.speed = expectedSpeed;
       }
-      
+
       state.timeAlive += dt;
       state.distance += state.speed * dt;
 
@@ -275,7 +280,7 @@ export class GameEngine {
         state.footprints[i].x -= state.speed * dt;
         if (state.footprints[i].x < -20) state.footprints.splice(i, 1);
       }
-      
+
       const { player } = state;
       const groundY = this.renderer.groundY();
 
@@ -292,7 +297,7 @@ export class GameEngine {
         player.chargeT += dt;
         if (player.chargeT > CONSTANTS.MAX_CHARGE) player.chargeT = CONSTANTS.MAX_CHARGE;
       }
-      
+
       player.blinkTimer -= dt;
       if (player.blinkTimer <= 0) {
         if (player.isBlinking) {
@@ -325,7 +330,7 @@ export class GameEngine {
           this.trueScore += 1; // Secure increment
           state.score = this.trueScore; // Sync back to state for UI
           // Trigger UI update only on score change to avoid React thrashing
-          this.onUIUpdate(state); 
+          this.onUIUpdate(state);
         }
       }
 
@@ -341,7 +346,7 @@ export class GameEngine {
       // Collision
       // Integrity Check: Ensure circleRect hasn't been replaced by a dummy that always returns false
       if (!circleRect(0, 0, 10, 0, 0, 10, 10)) {
-          state.isCheater = true;
+        state.isCheater = true;
       }
 
       for (const o of state.obstacles) {
@@ -363,7 +368,7 @@ export class GameEngine {
 
   loop(now) {
     if (!this.running) return;
-    
+
     const dt = Math.min(0.033, (now - this.tPrev) / 1000);
     this.tPrev = now;
 

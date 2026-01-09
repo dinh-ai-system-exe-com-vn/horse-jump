@@ -13,7 +13,7 @@ export class GameState {
     this.inMenu = true;
     this.showTrajectory = false;
     this.isCheater = false;
-    
+
     // Entities
     this.player = {
       x: 140,
@@ -25,8 +25,10 @@ export class GameState {
       blinkTimer: 0,
       isBlinking: false,
       canDoubleJump: true,
+      horseSkin: localStorage.getItem('chargeJumpHorse') || 'default',
+      wingsSkin: localStorage.getItem('chargeJumpWings') || 'default',
     };
-    
+
     this.obstacles = [];
     this.particles = [];
     this.footprints = [];

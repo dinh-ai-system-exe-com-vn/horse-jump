@@ -7,7 +7,21 @@ export const CONSTANTS = {
   CHARGE_MULT: 1.6,
   SPEED_BASE: 420,
   SPEED_GAIN: 12,
-  OBSTACLE_GAP_MIN: 280,
-  OBSTACLE_GAP_MAX: 600,
+  OBSTACLE_GAP_MIN: 320,
+  OBSTACLE_GAP_MAX: 650,
   BLOCK_SIZE: 64,
+  HORSE_SKINS: [
+    { id: 'default', name: 'Original', src: 'horse.svg' },
+    { id: 'fire', name: 'Fire Steed', src: 'horse_fire.svg' },
+    { id: 'spirit', name: 'Spirit Gallop', src: 'horse_spirit.svg' },
+    { id: 'gold', name: 'Golden Myth', src: 'horse_gold.svg' },
+    { id: 'shadow_neon', name: 'Neon Shadow', src: 'horse_shadow_neon.svg' },
+  ],
+  WINGS_SKINS: [
+    { id: 'default', name: 'Basic', src: 'wings.svg' },
+    { id: 'angel', name: 'Heavenly', src: 'wings_angel.svg' },
+    { id: 'mecha', name: 'Cybernetic', src: 'wings_mecha.svg' },
+    { id: 'butterfly', name: 'Vibrant', src: 'wings_butterfly.svg' },
+    { id: 'bat_purple', name: 'Neon Bat', src: 'wings_bat_neon.svg' },
+  ],
 };

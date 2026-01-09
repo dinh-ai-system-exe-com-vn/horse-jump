@@ -12,9 +12,11 @@ export default function App() {
     deathCount: 0,
     gameOver: false,
     inMenu: true,
-    showTrajectory: true
+    showTrajectory: true,
+    horseSkin: localStorage.getItem('chargeJumpHorse') || 'default',
+    wingsSkin: localStorage.getItem('chargeJumpWings') || 'default',
   });
-  
+
   const [showSettings, setShowSettings] = useState(false);
 
   const handleGameInit = useCallback((eng) => {
@@ -27,7 +29,9 @@ export default function App() {
         deathCount: state.deathCount,
         gameOver: state.gameOver,
         inMenu: state.inMenu,
-        showTrajectory: state.showTrajectory
+        showTrajectory: state.showTrajectory,
+        horseSkin: state.player.horseSkin,
+        wingsSkin: state.player.wingsSkin,
       });
     };
     // Initial sync
@@ -37,6 +41,19 @@ export default function App() {
   const handleStart = () => engine?.startGame();
   const handleRestart = () => engine?.resetGame();
 
+  const handleSkinChange = (type, skinId) => {
+    if (!engine) return;
+    if (type === 'horse') {
+      engine.state.player.horseSkin = skinId;
+      localStorage.setItem('chargeJumpHorse', skinId);
+    } else {
+      engine.state.player.wingsSkin = skinId;
+      localStorage.setItem('chargeJumpWings', skinId);
+    }
+    // Trigger a sync
+    engine.onUIUpdate(engine.state);
+  };
+
   // Input Listeners attached to Window/Document for global capture
   useEffect(() => {
     if (!engine) return;
@@ -45,12 +62,12 @@ export default function App() {
       if (showSettings) return;
       if (e.repeat) return;
       if (e.code === "Space" || e.code === "ArrowUp") engine.press();
-      
+
       // Menu/Game Over shortcuts
       if (engine.state.inMenu || engine.state.gameOver) {
         if (e.code === "Space" || e.code === "Enter") {
-           if (engine.state.inMenu) handleStart();
-           else handleRestart();
+          if (engine.state.inMenu) handleStart();
+          else handleRestart();
         }
       }
     };
@@ -65,21 +82,21 @@ export default function App() {
       engine.press();
     };
     const handleMouseUp = () => {
-       if (showSettings) return;
-       engine.release();
+      if (showSettings) return;
+      engine.release();
     };
     const handleTouchStart = (e) => {
-       if (showSettings) return;
-       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
-       // Prevent default only if we are not on a button, to stop scrolling/zooming
-       if (e.cancelable) e.preventDefault(); 
-       engine.press();
+      if (showSettings) return;
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
+      // Prevent default only if we are not on a button, to stop scrolling/zooming
+      if (e.cancelable) e.preventDefault();
+      engine.press();
     };
     const handleTouchEnd = (e) => {
-       if (showSettings) return;
-       if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
-       if (e.cancelable) e.preventDefault(); 
-       engine.release();
+      if (showSettings) return;
+      if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'LABEL') return;
+      if (e.cancelable) e.preventDefault();
+      engine.release();
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -100,18 +117,19 @@ export default function App() {
   }, [engine, showSettings]);
 
   return (
-    <div 
+    <div
       style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}
       onContextMenu={(e) => e.preventDefault()}
     >
       <GameCanvas onGameInit={handleGameInit} />
-      <UI 
-        gameState={gameState} 
-        onStart={handleStart} 
-        onRestart={handleRestart} 
+      <UI
+        gameState={gameState}
+        onStart={handleStart}
+        onRestart={handleRestart}
         onToggleTrajectory={() => engine?.toggleTrajectory()}
         showSettings={showSettings}
         onToggleSettings={() => setShowSettings(!showSettings)}
+        onSkinChange={handleSkinChange}
       />
     </div>
   );
