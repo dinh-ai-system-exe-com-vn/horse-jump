@@ -14,15 +14,20 @@ export class GameEngine {
     this.reqId = null;
 
     this.spawnObstacle(true);
+    this.isLooping = false;
   }
 
   start() {
-    this.loop(performance.now());
+    if (!this.isLooping) {
+      this.isLooping = true;
+      this.loop(performance.now());
+    }
   }
 
   stop() {
     cancelAnimationFrame(this.reqId);
     this.running = false;
+    this.isLooping = false;
   }
 
   destroy() {
@@ -72,17 +77,14 @@ export class GameEngine {
     this.state.reset();
     this.spawnObstacle(true);
     this.onUIUpdate(this.state);
+    this.start(); // Restart loop
   }
 
   resetGame() {
     this.state.reset();
     this.spawnObstacle(true);
     this.onUIUpdate(this.state);
-  }
-
-  toggleTrajectory() {
-    this.state.showTrajectory = !this.state.showTrajectory;
-    this.onUIUpdate(this.state);
+    this.start(); // Restart loop
   }
 
   // Logic
@@ -245,6 +247,12 @@ export class GameEngine {
 
     this.update(dt);
     this.renderer.draw(this.state);
+
+    // Stop looping if in static state (Menu or Game Over) to save GPU
+    if (this.state.inMenu || this.state.gameOver) {
+      this.isLooping = false;
+      return;
+    }
 
     this.reqId = requestAnimationFrame((t) => this.loop(t));
   }
