@@ -123,12 +123,32 @@ export class Renderer {
     ctx.clearRect(0, 0, width, height); 
     ctx.translate(sx, sy);
 
-    // BG Color
-    let bg = "#0b0f17";
-    if (score >= 10 && score < 20) bg = "#4c1d95";
-    else if (score >= 20 && score < 30) bg = "#0ea5e9";
-    else if (score >= 30) bg = "#be123c";
-    ctx.fillStyle = bg;
+    // BG Gradient System
+    let cTop, cBot;
+    
+    if (score < 10) {
+        // Phase 1: Calm Night (Deep Slate -> Indigo)
+        cTop = "#020617"; 
+        cBot = "#1e1b4b"; 
+    } else if (score < 25) {
+        // Phase 2: Mystic Pressure (Deep Indigo -> Vivid Purple)
+        cTop = "#1e1b4b"; 
+        cBot = "#701a75"; 
+    } else if (score < 50) {
+        // Phase 3: High Danger (Dark Burgundy -> Intense Rose)
+        cTop = "#4a0404"; 
+        cBot = "#be123c"; 
+    } else {
+        // Phase 4: The Void (Pitch Black -> Hellish Red)
+        cTop = "#000000"; 
+        cBot = "#991b1b"; 
+    }
+
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+    bgGrad.addColorStop(0, cTop);
+    bgGrad.addColorStop(1, cBot);
+
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(-50, -50, width + 100, height + 100);
 
     // Stars
