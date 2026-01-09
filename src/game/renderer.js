@@ -1,5 +1,5 @@
-import { CONSTANTS } from './constants.js';
 import { assets } from './assets.js';
+import { CONSTANTS } from './constants.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -49,58 +49,63 @@ export class Renderer {
     let vy, x = player.x, y = player.y;
 
     if (player.charging) {
-       // Prediction based on charge
        const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
        const boost = 1 + p * CONSTANTS.CHARGE_MULT;
        vy = -CONSTANTS.BASE_JUMP * boost;
     } else if (!player.onGround) {
-       // Real-time path based on current physics
        vy = player.vy;
     } else {
-       // Idle on ground - no path
        return;
     }
 
-    const dt = 0.05; // Simulation step
+    const dt = 0.05; 
     const groundY = this.groundY() - CONSTANTS.PLAYER_R;
-    const limit = 2.5; // Simulate up to 2.5 seconds
+    const limit = 2.5; 
 
     this.ctx.save();
     
-    // Draw Dots
+    // Optimization: Batch all dots into one path
     this.ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+    this.ctx.beginPath();
+
+    let landed = false;
+    let landX = 0;
 
     for (let t = 0; t < limit; t += dt) {
       vy += CONSTANTS.G * dt;
       y += vy * dt;
-      x += speed * dt; // Simulate world moving left relative to player
+      x += speed * dt; 
 
       if (y >= groundY) {
-        // Landing Spot Indicator
-        this.ctx.beginPath();
-        this.ctx.fillStyle = "#ef4444";
-        this.ctx.arc(x, groundY + CONSTANTS.PLAYER_R, 6, 0, Math.PI * 2);
-        this.ctx.fill();
-        
-        // Crosshair
-        this.ctx.strokeStyle = "#fff";
-        this.ctx.lineWidth = 2;
-        this.ctx.beginPath();
-        this.ctx.moveTo(x - 8, groundY + CONSTANTS.PLAYER_R);
-        this.ctx.lineTo(x + 8, groundY + CONSTANTS.PLAYER_R);
-        this.ctx.moveTo(x, groundY + CONSTANTS.PLAYER_R - 8);
-        this.ctx.lineTo(x, groundY + CONSTANTS.PLAYER_R + 8);
-        this.ctx.stroke();
+        landed = true;
+        landX = x;
         break;
       }
 
-      // Trajectory Dot
-      if (t > 0) { // Don't draw at origin
-        this.ctx.beginPath();
+      if (t > 0) { 
+        this.ctx.moveTo(x + 3, y);
         this.ctx.arc(x, y, 3, 0, Math.PI * 2);
-        this.ctx.fill();
       }
     }
+    this.ctx.fill(); // Single draw call for all dots
+
+    // Draw Landing Marker
+    if (landed) {
+        this.ctx.beginPath();
+        this.ctx.fillStyle = "#ef4444";
+        this.ctx.arc(landX, groundY + CONSTANTS.PLAYER_R, 6, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.strokeStyle = "#fff";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(landX - 8, groundY + CONSTANTS.PLAYER_R);
+        this.ctx.lineTo(landX + 8, groundY + CONSTANTS.PLAYER_R);
+        this.ctx.moveTo(landX, groundY + CONSTANTS.PLAYER_R - 8);
+        this.ctx.lineTo(landX, groundY + CONSTANTS.PLAYER_R + 8);
+        this.ctx.stroke();
+    }
+
     this.ctx.restore();
   }
 
@@ -115,7 +120,7 @@ export class Renderer {
     }
 
     ctx.save();
-    ctx.clearRect(0, 0, width, height); // Clear previous frame
+    ctx.clearRect(0, 0, width, height); 
     ctx.translate(sx, sy);
 
     // BG Color
@@ -129,11 +134,13 @@ export class Renderer {
     // Stars
     ctx.globalAlpha = 0.25;
     ctx.fillStyle = "#cfe8ff";
+    ctx.beginPath(); // Batch stars
     for (let i = 0; i < 60; i++) {
       const x = (i * 97 + (timeAlive * 120)) % (width + 40) - 20;
       const y = (i * 53) % (height - 160) + 30;
-      ctx.fillRect(x, y, 2, 2);
+      ctx.rect(x, y, 2, 2);
     }
+    ctx.fill();
     ctx.globalAlpha = 1;
 
     // Mountains
@@ -159,11 +166,12 @@ export class Renderer {
 
     // Footprints
     ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath(); // Batch footprints
     for (const fp of footprints) {
-      ctx.beginPath();
+      ctx.moveTo(fp.x + 8, fp.y + 2);
       ctx.ellipse(fp.x, fp.y + 2, 8, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
     }
+    ctx.fill();
 
     // Obstacles
     for (const o of obstacles) {
@@ -181,7 +189,6 @@ export class Renderer {
         ctx.fillRect(o.x, o.y, o.w, o.h);
       }
 
-      // Warning Indicator
       if (o.x > width && o.x < width + 500) {
         const warnAlpha = Math.abs(Math.sin(timeAlive * 10));
         ctx.globalAlpha = warnAlpha;
@@ -203,7 +210,6 @@ export class Renderer {
       }
     }
     
-    // Draw Trajectory (Behind Particles, In front of Obstacles)
     if (state.showTrajectory) {
       this.drawTrajectory(state);
     }
@@ -218,18 +224,20 @@ export class Renderer {
     }
     ctx.globalAlpha = 1;
 
-    // Player Glow
-    const glow = ctx.createRadialGradient(player.x, player.y, 10, player.x, player.y, 60);
+    // Player Context
+    ctx.save();
+    ctx.translate(player.x, player.y);
+
+    // Optimized Player Glow (Inside Translate)
+    // Draw at (0,0) relative to player
+    const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, 60);
     glow.addColorStop(0, "rgba(255, 255, 200, 0.15)");
     glow.addColorStop(1, "rgba(255, 255, 200, 0)");
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, 60, 0, Math.PI * 2);
+    ctx.arc(0, 0, 60, 0, Math.PI * 2);
     ctx.fill();
 
-    // Player Draw
-    ctx.save();
-    ctx.translate(player.x, player.y);
     let rot = 0;
     if (!player.onGround) {
       rot = Math.min(0.5, Math.max(-0.5, player.vy / 1000));
@@ -241,7 +249,6 @@ export class Renderer {
       const offset = drawSize / 2;
       ctx.drawImage(assets.horse, -offset, -offset, drawSize, drawSize);
 
-      // Wings
       if (!player.onGround && assets.wings.complete && assets.wings.naturalWidth > 0) {
         ctx.save();
         ctx.translate(-2, -12);
@@ -252,7 +259,6 @@ export class Renderer {
         ctx.restore();
       }
 
-      // Aura
       if (player.charging) {
         const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
         ctx.globalCompositeOperation = "lighter";
@@ -294,7 +300,6 @@ export class Renderer {
         ctx.globalCompositeOperation = "source-over"; 
       }
 
-      // Blink
       if (player.isBlinking) {
         const ex = -9, ey = -7.5;
         ctx.fillStyle = "#dfa";
@@ -304,13 +309,11 @@ export class Renderer {
       }
 
     } else {
-      // Fallback
       ctx.beginPath(); ctx.fillStyle = "#7dd3fc";
       ctx.arc(0, 0, CONSTANTS.PLAYER_R, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
 
-    // Charge Bar
     if (player.charging) {
       const p = Math.min(1, player.chargeT / CONSTANTS.MAX_CHARGE);
       const bw = 88, bh = 10;
@@ -321,6 +324,6 @@ export class Renderer {
       ctx.strokeStyle = "#334155"; ctx.strokeRect(bx, by, bw, bh);
     }
 
-    ctx.restore(); // Restore camera shake
+    ctx.restore();
   }
 }
