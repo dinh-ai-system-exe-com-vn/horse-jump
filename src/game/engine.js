@@ -92,35 +92,57 @@ export class GameEngine {
     const { obstacles } = this.state;
     const width = this.renderer.width; // Use renderer's width which tracks window
     
-    const cols = Math.floor(Math.random() * 2) + 1;
-    let rows = Math.floor(Math.random() * 3) + 1;
+    // Logic: 25% chance for a "Ceiling" obstacle (Must run under), but never as the first one
+    const isCeiling = !initial && Math.random() < 0.25;
+    
+    let type = isCeiling ? 'ceiling' : 'wall';
+    let x, w, h, y;
 
-    const lastOb = obstacles[obstacles.length - 1];
-    if (lastOb) {
-      const lastRows = lastOb.h / CONSTANTS.BLOCK_SIZE;
-      if (lastRows >= 2 && rows === lastRows) rows = 1;
+    const groundY = this.renderer.groundY();
+
+    if (type === 'ceiling') {
+        // Ceiling Logic: Floating block low enough to hit head if jumping
+        // Player R=18, Height~36. Ground clearance needs to be > 40.
+        // Let's set clearance to ~70.
+        const clearance = 70;
+        h = 60; // Thickness of the block
+        w = rand(150, 400); // Can be long
+        y = groundY - clearance - h;
+    } else {
+        // Wall Logic (Existing)
+        const cols = Math.floor(Math.random() * 2) + 1;
+        let rows = Math.floor(Math.random() * 3) + 1;
+
+        const lastOb = obstacles[obstacles.length - 1];
+        if (lastOb && lastOb.type === 'wall') {
+            const lastRows = lastOb.h / CONSTANTS.BLOCK_SIZE;
+            if (lastRows >= 2 && rows === lastRows) rows = 1;
+        }
+
+        w = cols * CONSTANTS.BLOCK_SIZE;
+        h = rows * CONSTANTS.BLOCK_SIZE;
+        y = groundY - h;
     }
 
-    const w = cols * CONSTANTS.BLOCK_SIZE;
-    const h = rows * CONSTANTS.BLOCK_SIZE;
-
-    let x;
     if (initial) {
       x = width + rand(100, 300);
     } else {
       let gapMin = CONSTANTS.OBSTACLE_GAP_MIN;
       let gapMax = CONSTANTS.OBSTACLE_GAP_MAX;
 
-      if (rows === 3) {
-        gapMin += 300;
-        gapMax += 450;
+      // If previous was ceiling, we might need more time to land? 
+      // Actually standard gaps are usually fine, maybe slight increase.
+      const lastOb = obstacles[obstacles.length - 1];
+      
+      if (lastOb && lastOb.type === 'wall' && lastOb.h > CONSTANTS.BLOCK_SIZE * 2) {
+         gapMin += 300; gapMax += 450;
       }
 
       const nextX = (lastOb ? lastOb.x + lastOb.w : width) + rand(gapMin, gapMax);
       x = Math.max(width + 50, nextX);
     }
 
-    obstacles.push({ x, w, h, y: this.renderer.groundY() - h, passed: false });
+    obstacles.push({ x, w, h, y, type, passed: false });
   }
 
   spawnDust(x, y) {

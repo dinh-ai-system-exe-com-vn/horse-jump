@@ -195,7 +195,24 @@ export class Renderer {
 
     // Obstacles
     for (const o of obstacles) {
-      if (assets.fence.complete && assets.fence.naturalWidth > 0) {
+      if (o.type === 'ceiling') {
+         // Draw Ceiling Obstacle (Floating Block)
+         ctx.fillStyle = "#334155"; // Slate color
+         ctx.fillRect(o.x, o.y, o.w, o.h);
+         
+         // Detail: Bottom spikes/rim
+         ctx.fillStyle = "#1e293b";
+         ctx.fillRect(o.x, o.y + o.h - 10, o.w, 10);
+
+         // Detail: Rivets
+         ctx.fillStyle = "#94a3b8";
+         for(let i=10; i<o.w; i+=40) {
+             ctx.beginPath();
+             ctx.arc(o.x + i, o.y + o.h - 15, 3, 0, Math.PI*2);
+             ctx.fill();
+         }
+      } 
+      else if (assets.fence.complete && assets.fence.naturalWidth > 0) {
         const size = CONSTANTS.BLOCK_SIZE;
         const cols = o.w / size;
         const rows = o.h / size;
