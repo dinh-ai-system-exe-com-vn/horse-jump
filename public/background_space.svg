@@ -1,0 +1,81 @@
+<svg width="2000" height="1000" viewBox="0 0 2000 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Deep Space Gradient -->
+  <defs>
+    <linearGradient id="spaceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#020617;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e1b4b;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Planet Glows -->
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0" />
+    </radialGradient>
+
+    <!-- Chibi Face Template (Symbol) -->
+    <symbol id="chibiFace" viewBox="-50 -50 100 100">
+      <!-- Eyes -->
+      <circle cx="-20" cy="-5" r="8" fill="#000" />
+      <circle cx="20" cy="-5" r="8" fill="#000" />
+      <!-- Eye Shines -->
+      <circle cx="-24" cy="-9" r="3" fill="#fff" />
+      <circle cx="16" cy="-9" r="3" fill="#fff" />
+      <!-- Mouth -->
+      <path d="M -15 15 Q 0 30 15 15" stroke="#000" stroke-width="4" fill="none" stroke-linecap="round" />
+    </symbol>
+  </defs>
+
+  <!-- Stars -->
+  <g fill="#fff" opacity="0.3">
+    <circle cx="100" cy="150" r="1.5" />
+    <circle cx="450" cy="80" r="2" />
+    <circle cx="800" cy="200" r="1" />
+    <circle cx="1200" cy="120" r="2" />
+    <circle cx="1600" cy="180" r="1.5" />
+    <circle cx="1900" cy="300" r="1" />
+    <circle cx="300" cy="400" r="2.5" />
+    <circle cx="700" cy="450" r="1.2" />
+    <circle cx="1100" cy="380" r="2" />
+    <circle cx="1500" cy="420" r="1.5" />
+  </g>
+
+  <!-- Sun -->
+  <circle cx="200" cy="250" r="150" fill="url(#sunGlow)" />
+  <circle cx="200" cy="250" r="90" fill="#fbbf24" />
+  <use href="#chibiFace" x="160" y="210" width="80" height="80" />
+
+  <!-- Mercury -->
+  <circle cx="450" cy="320" r="25" fill="#94a3b8" />
+  <use href="#chibiFace" x="435" y="305" width="30" height="30" />
+
+  <!-- Venus -->
+  <circle cx="600" cy="200" r="40" fill="#fcd34d" />
+  <use href="#chibiFace" x="580" y="180" width="40" height="40" />
+
+  <!-- Earth -->
+  <circle cx="850" cy="350" r="50" fill="#3b82f6" />
+  <circle cx="840" cy="340" r="15" fill="#22c55e" opacity="0.6" />
+  <circle cx="865" cy="365" r="12" fill="#22c55e" opacity="0.6" />
+  <use href="#chibiFace" x="825" y="325" width="50" height="50" />
+
+  <!-- Mars -->
+  <circle cx="1050" cy="250" r="35" fill="#ef4444" />
+  <use href="#chibiFace" x="1032" y="232" width="35" height="35" />
+
+  <!-- Jupiter -->
+  <circle cx="1300" cy="380" r="85" fill="#d97706" />
+  <path d="M 1215 360 Q 1300 380 1385 360" stroke="rgba(0,0,0,0.1)" stroke-width="10" fill="none" />
+  <path d="M 1215 400 Q 1300 420 1385 400" stroke="rgba(0,0,0,0.1)" stroke-width="8" fill="none" />
+  <use href="#chibiFace" x="1260" y="340" width="80" height="80" />
+
+  <!-- Saturn -->
+  <g transform="translate(1650, 280) rotate(15)">
+    <ellipse cx="0" cy="0" rx="100" ry="25" fill="none" stroke="#eab308" stroke-width="12" opacity="0.6" />
+    <circle cx="0" cy="0" r="60" fill="#fbbf24" />
+    <use href="#chibiFace" x="-30" y="-30" width="60" height="60" />
+  </g>
+
+  <!-- Uranus -->
+  <circle cx="1900" cy="420" r="55" fill="#22d3ee" />
+  <use href="#chibiFace" x="1872" y="392" width="55" height="55" />
+</svg>

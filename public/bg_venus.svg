@@ -1,0 +1,36 @@
+<svg width="2000" height="1000" viewBox="0 0 2000 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="venusSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a16207" />
+      <stop offset="100%" style="stop-color:#713f12" />
+    </linearGradient>
+    <symbol id="volcano" viewBox="0 0 200 150">
+      <path d="M 0 150 L 80 40 L 120 40 L 200 150 Z" fill="#451a03" />
+      <path d="M 80 40 L 120 40 L 100 60 Z" fill="#fde047" /> <!-- Toxic gas/lava -->
+    </symbol>
+    <symbol id="toxicCloud" viewBox="0 0 300 100">
+      <path d="M 0 50 Q 75 0 150 50 T 300 50" stroke="#fde047" stroke-width="20" fill="none" opacity="0.15" />
+    </symbol>
+  </defs>
+  <!-- Venus: Toxic Clouds, Volcanoes, Acid Rain -->
+  <rect width="2000" height="1000" fill="url(#venusSky)" />
+
+  <!-- Thick Swirling Clouds -->
+  <use href="#toxicCloud" x="-100" y="100" width="800" height="200" />
+  <use href="#toxicCloud" x="600" y="200" width="900" height="250" />
+  <use href="#toxicCloud" x="1400" y="150" width="700" height="180" />
+
+  <!-- Volcanoes -->
+  <use href="#volcano" x="200" y="600" width="400" height="300" />
+  <use href="#volcano" x="1200" y="650" width="350" height="260" />
+
+  <!-- Ground -->
+  <rect x="0" y="850" width="2000" height="150" fill="#451a03" />
+  
+  <!-- Acid streaks -->
+  <g stroke="#fef08a" stroke-width="1" opacity="0.2">
+    <line x1="200" y1="0" x2="150" y2="400" />
+    <line x1="800" y1="0" x2="750" y2="500" />
+    <line x1="1500" y1="0" x2="1450" y2="350" />
+  </g>
+</svg>

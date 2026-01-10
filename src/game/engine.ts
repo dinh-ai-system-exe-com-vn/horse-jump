@@ -1,11 +1,22 @@
-import { CONSTANTS } from './constants.js';
-import { rand, circleRect } from './utils.js';
-import { GameState } from './state.js';
-import { audioManager } from './audio.js';
-import { Renderer } from './renderer.js';
+import { CONSTANTS, GAME_SETTINGS } from './constants';
+import { rand, circleRect } from './utils';
+import { GameState, type Obstacle } from './state';
+import { audioManager } from './audio';
+import { Renderer } from './renderer';
+
+type UIUpdateCallback = (state: GameState) => void;
 
 export class GameEngine {
-  constructor(canvas, onUIUpdate) {
+  state: GameState;
+  renderer: Renderer;
+  onUIUpdate: UIUpdateCallback;
+  running: boolean;
+  tPrev: number;
+  reqId: number | null;
+  trueScore: number;
+  isLooping: boolean;
+
+  constructor(canvas: HTMLCanvasElement, onUIUpdate: UIUpdateCallback) {
     this.state = new GameState();
     this.renderer = new Renderer(canvas);
     this.onUIUpdate = onUIUpdate; // Callback to update React UI
@@ -42,7 +53,9 @@ export class GameEngine {
   }
 
   stop() {
-    cancelAnimationFrame(this.reqId);
+    if (this.reqId !== null) {
+      cancelAnimationFrame(this.reqId);
+    }
     this.running = false;
     this.isLooping = false;
   }
@@ -83,6 +96,8 @@ export class GameEngine {
       player.onGround = false;
       player.charging = false;
       player.chargeT = 0;
+      player.hasJumped = true; // Set flag when jumping
+      player.currentJumpScore = 0; // Reset jump score counter
       this.state.shake = 10 * p;
       audioManager.jump();
     }
@@ -116,6 +131,7 @@ export class GameEngine {
   }
 
   resetGame() {
+    audioManager.resume();
     // CRITICAL: Reset trueScore BEFORE state.reset() triggers the setter
     this.trueScore = 0;
     this.state.reset();
@@ -142,42 +158,88 @@ export class GameEngine {
   spawnObstacle(initial = false) {
     const { obstacles } = this.state;
     const width = this.renderer.width; // Use renderer's width which tracks window
+    const obstacleSettings = GAME_SETTINGS.obstacles;
+    const difficultySettings =
+      GAME_SETTINGS.difficulties[this.state.difficulty] ??
+      GAME_SETTINGS.difficulties[GAME_SETTINGS.defaultDifficulty];
 
-    // Logic: 25% chance for a "Ceiling" obstacle (Must run under), but never as the first one
-    const isCeiling = !initial && Math.random() < 0.25;
+    const lastOb = obstacles[obstacles.length - 1];
+    let forceEasy = false;
 
-    let type = isCeiling ? 'ceiling' : 'wall';
-    let x, w, h, y;
-    let rows = 0; // Default 0 for non-wall types
+    // Logic: After a 3-row obstacle, 50% chance to force an easier one
+    if (lastOb && lastOb.type === 'wall' && (lastOb.h / CONSTANTS.BLOCK_SIZE) === 3) {
+      if (Math.random() < 0.5) forceEasy = true;
+    }
+
+    // Determine obstacle type based on chances
+    let type: Obstacle['type'] = 'wall';
+    const roll = Math.random();
+
+    if (!initial && !forceEasy) {
+      const score = this.trueScore;
+      const canSpawnMid = score >= obstacleSettings.mid.minScore;
+      const canSpawnCeiling = score >= obstacleSettings.ceiling.minScore;
+
+      if (canSpawnMid && roll < difficultySettings.midChance) {
+        type = 'mid';
+      } else if (canSpawnCeiling && roll < (canSpawnMid ? difficultySettings.midChance : 0) + difficultySettings.ceilingChance) {
+        type = 'ceiling';
+      }
+    }
+    let x = 0;
+    let w = 0;
+    let h = 0;
+    let y = 0;
+    let rows = 0;
 
     const groundY = this.renderer.groundY();
 
+    let baseY: number | undefined;
+    let moveAmplitude: number | undefined;
+    let moveSpeed: number | undefined;
+    let movePhase: number | undefined;
+
     if (type === 'ceiling') {
-      // Ceiling Logic: Floating block low enough to hit head if jumping
-      // Player R=18, Height~36. Ground clearance needs to be > 40.
-      // Let's set clearance to ~70.
-      const clearance = 70;
-      h = 60; // Thickness of the block
-      w = rand(150, 400); // Can be long
+      const clearance = obstacleSettings.ceiling.clearance;
+      h = obstacleSettings.ceiling.height;
+      w = rand(obstacleSettings.ceiling.width.min, obstacleSettings.ceiling.width.max);
       y = groundY - clearance - h;
+    } else if (type === 'mid') {
+      // Mid-air obstacle (e.g., Drone/Meteor)
+      h = obstacleSettings.mid.height;
+      w = obstacleSettings.mid.width;
+      const yr = obstacleSettings.mid.yRange;
+      baseY = groundY - rand(yr.min, yr.max);
+      y = baseY;
+      moveAmplitude = obstacleSettings.mid.moveAmplitude;
+      moveSpeed = obstacleSettings.mid.moveSpeed;
+      movePhase = Math.random() * Math.PI * 2;
     } else {
-      // Wall Logic (Existing)
-      const cols = Math.floor(Math.random() * 2) + 1;
-
-      // Weighted Height Logic:
-      // 50% -> Height 1
-      // 30% -> Height 2
-      // 20% -> Height 3 (Increased)
-      const r = Math.random();
-      if (r < 0.5) rows = 1;
-      else if (r < 0.8) rows = 2;
-      else rows = 3;
-
-      const lastOb = obstacles[obstacles.length - 1];
-      if (lastOb && lastOb.type === 'wall') {
-        const lastRows = lastOb.h / CONSTANTS.BLOCK_SIZE;
-        if (lastRows >= 2 && rows === lastRows) rows = 1;
+      // Wall Logic
+      if (forceEasy) {
+        rows = Math.random() < 0.6 ? 1 : 2; // Can be 1 or 2 blocks
+      } else {
+        let totalWeight = 0;
+        for (const entry of difficultySettings.wallHeightWeights) {
+          totalWeight += entry.weight;
+        }
+        let pick = Math.random() * totalWeight;
+        for (const entry of difficultySettings.wallHeightWeights) {
+          if (pick <= entry.weight) {
+            rows = entry.rows;
+            break;
+          }
+          pick -= entry.weight;
+        }
       }
+
+      if (rows === 0) rows = 1;
+      rows = Math.min(rows, obstacleSettings.wall.maxRows);
+
+      // Width logic: Increase 2-column probability even in early game
+      const diff = this.state.difficulty;
+      const colChance = diff === 'hard' ? 0.8 : 0.5; // 50% chance for 2 cols even in Easy/Normal
+      const cols = Math.random() < colChance ? 2 : 1;
 
       w = cols * CONSTANTS.BLOCK_SIZE;
       h = rows * CONSTANTS.BLOCK_SIZE;
@@ -185,33 +247,37 @@ export class GameEngine {
     }
 
     if (initial) {
-      x = width + rand(100, 300);
+      x = width + rand(obstacleSettings.initialSpawnRange.min, obstacleSettings.initialSpawnRange.max);
     } else {
-      let gapMin = CONSTANTS.OBSTACLE_GAP_MIN;
-      let gapMax = CONSTANTS.OBSTACLE_GAP_MAX;
+      let gapMin = difficultySettings.gap.min;
+      let gapMax = difficultySettings.gap.max;
 
-      // If previous was ceiling, we might need more time to land? 
-      // Actually standard gaps are usually fine, maybe slight increase.
-      const lastOb = obstacles[obstacles.length - 1];
-
-      if (lastOb && lastOb.type === 'wall') {
-        const lastH = lastOb.h / CONSTANTS.BLOCK_SIZE;
-        // If previous was tall (>2 blocks), increase gap
-        if (lastH >= 2) {
-          gapMin += 300; gapMax += 450;
-        }
-        // If current is tall (3 blocks) AND previous was short (1 block), ALSO increase gap
-        // This gives time to realize the next one is tall
-        else if (lastH === 1 && rows === 3) {
-          gapMin += 250; gapMax += 400;
+      if (lastOb) {
+        if (lastOb.type === 'wall') {
+          const lastH = lastOb.h / CONSTANTS.BLOCK_SIZE;
+          if (lastH >= 2) {
+            gapMin += obstacleSettings.gapAdjustments.tallWall.min;
+            gapMax += obstacleSettings.gapAdjustments.tallWall.max;
+          } else if (lastH === 1 && rows === 3) {
+            gapMin += obstacleSettings.gapAdjustments.shortToTall.min;
+            gapMax += obstacleSettings.gapAdjustments.shortToTall.max;
+          }
+        } else if (lastOb.type === 'ceiling') {
+          // Extra gap after ceiling to allow player to recover/reposition
+          gapMin += 100;
+          gapMax += 150;
+        } else if (lastOb.type === 'mid') {
+          // Slight extra gap after mid-air drone
+          gapMin += 50;
+          gapMax += 100;
         }
       }
 
       const nextX = (lastOb ? lastOb.x + lastOb.w : width) + rand(gapMin, gapMax);
-      x = Math.max(width + 50, nextX);
+      x = Math.max(width + obstacleSettings.minSpawnPadding, nextX);
     }
 
-    obstacles.push({ x, w, h, y, type, passed: false });
+    obstacles.push({ x, w, h, y, type, passed: false, baseY, moveAmplitude, moveSpeed, movePhase });
   }
 
   spawnDust(x, y) {
@@ -229,30 +295,54 @@ export class GameEngine {
     }
   }
 
-  update(dt) {
+  update(dt: number) {
     const { state } = this;
     if (!this.running || state.inMenu) return;
+    const obstacleSettings = GAME_SETTINGS.obstacles;
 
     if (!state.gameOver) {
       // --- Anti-Cheat Checks ---
+      const shouldCheckCheat = !import.meta.env.DEV;
+      const scoreValue = Number(state.score);
+      const speedSettings = GAME_SETTINGS.speed;
+      const expectedSpeed =
+        speedSettings.mode === 'step'
+          ? Math.min(
+            speedSettings.base +
+            Math.floor(this.trueScore / speedSettings.step.scoreStep) * speedSettings.step.speedStep,
+            speedSettings.step.max
+          )
+          : speedSettings.base + this.trueScore * speedSettings.linear.gainPerScore;
 
-      // 1. Detect if DevTools is open (simple check via outer/inner height/width)
-      const threshold = 160;
-      const isDevToolsOpen = (window.outerWidth - window.innerWidth > threshold) ||
-        (window.outerHeight - window.innerHeight > threshold);
+      if (shouldCheckCheat) {
+        // 1. Detect if DevTools is open (simple check via outer/inner height/width)
+        const threshold = 160;
+        const isLikelyMobile = window.matchMedia('(pointer: coarse)').matches;
+        const widthDiff = Math.abs(window.outerWidth - window.innerWidth);
+        const heightDiff = Math.abs(window.outerHeight - window.innerHeight);
+        const isDevToolsOpen = !isLikelyMobile && (widthDiff > threshold || heightDiff > threshold);
 
-      if (isDevToolsOpen) {
-        state.isCheater = true;
+        if (isDevToolsOpen) {
+          state.isCheater = true;
+        }
+
+        if (Number.isFinite(scoreValue) && scoreValue !== this.trueScore) {
+          state.isCheater = true;
+        }
+
+        // Allow a small buffer for floating point or frame delays, but not much
+        if (Number.isFinite(expectedSpeed) && state.speed > expectedSpeed + 20 && !state.isCheater) {
+          state.isCheater = true;
+        }
       }
 
-      if (state.score !== this.trueScore) {
-        state.isCheater = true;
-      }
-
-      const expectedSpeed = CONSTANTS.SPEED_BASE + this.trueScore * CONSTANTS.SPEED_GAIN;
-      // Allow a small buffer for floating point or frame delays, but not much
-      if (state.speed > expectedSpeed + 20 && !state.isCheater) {
-        state.isCheater = true;
+      // --- Dynamic Difficulty Scaling ---
+      if (this.trueScore < 5) {
+        state.difficulty = 'easy';
+      } else if (this.trueScore < 15) {
+        state.difficulty = 'normal';
+      } else {
+        state.difficulty = 'hard';
       }
 
       // --- Punishment ---
@@ -318,6 +408,8 @@ export class GameEngine {
         player.vy = 0;
         player.onGround = true;
         player.canDoubleJump = true;
+        player.hasJumped = false; // Reset anti-cheat flag on landing
+        player.currentJumpScore = 0; // Reset jump counter on landing
       } else {
         player.onGround = false;
       }
@@ -325,10 +417,27 @@ export class GameEngine {
       // Obstacles
       for (const o of state.obstacles) {
         o.x -= state.speed * dt;
+
+        if (o.type === 'mid' && o.baseY !== undefined && o.moveAmplitude !== undefined && o.movePhase !== undefined && o.moveSpeed !== undefined) {
+          o.movePhase += dt * o.moveSpeed;
+          o.y = o.baseY + Math.sin(o.movePhase) * o.moveAmplitude;
+        }
+
         if (!o.passed && o.x + o.w < player.x - CONSTANTS.PLAYER_R) {
           o.passed = true;
-          this.trueScore += 1; // Secure increment
-          state.score = this.trueScore; // Sync back to state for UI
+
+          // Anti-Cheat: Only count point if player has actually jumped
+          if (player.hasJumped) {
+            this.trueScore += 1;
+            state.score = this.trueScore;
+
+            // Limit: Max 3 obstacles per jump
+            player.currentJumpScore += 1;
+            if (player.currentJumpScore > 3) {
+              state.isCheater = true;
+            }
+          }
+
           // Trigger UI update only on score change to avoid React thrashing
           this.onUIUpdate(state);
         }
@@ -339,7 +448,7 @@ export class GameEngine {
       }
 
       const lastOb = state.obstacles[state.obstacles.length - 1];
-      if (!lastOb || lastOb.x + lastOb.w < this.renderer.width + 100) {
+      if (!lastOb || lastOb.x + lastOb.w < this.renderer.width + obstacleSettings.spawnAheadBuffer) {
         this.spawnObstacle(lastOb ? false : true);
       }
 
@@ -366,7 +475,7 @@ export class GameEngine {
     state.shake = Math.max(0, state.shake - 40 * dt);
   }
 
-  loop(now) {
+  loop(now: number) {
     if (!this.running) return;
 
     const dt = Math.min(0.033, (now - this.tPrev) / 1000);

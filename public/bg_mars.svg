@@ -1,0 +1,33 @@
+<svg width="2000" height="1000" viewBox="0 0 2000 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="marsSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#86c4b4" />
+      <stop offset="100%" style="stop-color:#afd3a5" />
+    </linearGradient>
+    <symbol id="dustDevil" viewBox="0 0 60 200">
+      <path d="M 30 200 Q 0 150 30 100 Q 60 50 30 0" stroke="#c85434" stroke-width="4" fill="none" opacity="0.4" />
+      <path d="M 30 180 Q 10 140 30 100 Q 50 60 30 20" stroke="#8b2b1d" stroke-width="2" fill="none" opacity="0.3" />
+    </symbol>
+    <symbol id="mountain" viewBox="0 0 200 150">
+      <path d="M 0 150 L 80 20 L 120 70 L 160 30 L 200 150 Z" />
+    </symbol>
+  </defs>
+  <!-- Mars: Red Spires, Dust Devils, Ancient Rivers -->
+  <rect width="2000" height="1000" fill="url(#marsSky)" />
+
+  <!-- Distant Mountains -->
+  <g fill="#98b89e" opacity="0.6">
+    <use href="#mountain" x="0" y="600" width="600" height="400" />
+    <use href="#mountain" x="1100" y="620" width="500" height="380" />
+  </g>
+
+  <!-- Dust Devils -->
+  <use href="#dustDevil" x="400" y="400" width="100" height="350" />
+  <use href="#dustDevil" x="1500" y="450" width="80" height="300" />
+
+  <!-- Craters Shadows (Ancient Rivers) -->
+  <path d="M 100 850 Q 300 800 500 850 T 900 820" stroke="#8b2b1d" stroke-width="20" fill="none" opacity="0.2" />
+
+  <!-- Ground -->
+  <rect x="0" y="850" width="2000" height="150" fill="#c85434" />
+</svg>

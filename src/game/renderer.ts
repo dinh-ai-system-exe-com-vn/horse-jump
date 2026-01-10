@@ -1,12 +1,27 @@
-import { assets } from './assets.js';
-import { CONSTANTS } from './constants.js';
+import { assets } from './assets';
+import { CONSTANTS } from './constants';
+import type { GameState } from './state';
 
 export class Renderer {
-  constructor(canvas) {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  width: number;
+  height: number;
+  gameScale: number;
+  currentBg: HTMLImageElement | null = null;
+  prevBg: HTMLImageElement | null = null;
+  bgAlpha: number = 1;
+
+  constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Canvas 2D context not available');
+    }
+    this.ctx = ctx;
     this.width = 0;
     this.height = 0;
+    this.gameScale = 1;
 
     window.addEventListener('resize', () => this.resize());
     this.resize();
@@ -43,7 +58,7 @@ export class Renderer {
     return this.height - CONSTANTS.GROUND_H;
   }
 
-  drawTrajectory(state) {
+  drawTrajectory(state: GameState) {
     const { player, speed } = state;
 
     let vy, x = player.x, y = player.y;
@@ -109,7 +124,7 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  draw(state) {
+  draw(state: GameState) {
     const { ctx, width, height } = this;
     const { player, obstacles, particles, footprints, score, timeAlive, distance, shake } = state;
 
@@ -123,48 +138,122 @@ export class Renderer {
     ctx.clearRect(0, 0, width, height);
     ctx.translate(sx, sy);
 
-    // BG Gradient System
+    // BG Gradient & Theme Selection
     let cTop, cBot;
+    let groundColor = "#121a2a";
+    let groundAccent = "#1f2b44";
+    let mountainColor = "#162035";
+    let showStars = true;
+    let targetBg: HTMLImageElement | null = null;
 
     if (score < 10) {
-      // Phase 1: Calm Night (Deep Slate -> Indigo)
-      cTop = "#020617";
-      cBot = "#1e1b4b";
+      // Earth Theme
+      cTop = "#7dd3fc"; cBot = "#bae6fd";
+      groundColor = "#166534"; groundAccent = "#14532d";
+      mountainColor = "#1e40af"; showStars = false;
+      targetBg = assets.backgrounds.earth;
     } else if (score < 25) {
-      // Phase 2: Mystic Pressure (Deep Indigo -> Vivid Purple)
-      cTop = "#1e1b4b";
-      cBot = "#701a75";
-    } else if (score < 50) {
-      // Phase 3: High Danger (Dark Burgundy -> Intense Rose)
-      cTop = "#4a0404";
-      cBot = "#be123c";
+      // Mars Theme
+      cTop = "#86c4b4"; cBot = "#afd3a5";
+      groundColor = "#c85434"; groundAccent = "#8b2b1d";
+      mountainColor = "#98b89e"; showStars = false;
+      targetBg = assets.backgrounds.mars;
+    } else if (score < 45) {
+      // Mercury Theme
+      cTop = "#475569"; cBot = "#1e293b";
+      groundColor = "#334155"; groundAccent = "#0f172a";
+      mountainColor = "#1e293b"; showStars = true;
+      targetBg = assets.backgrounds.mercury;
+    } else if (score < 70) {
+      // Venus Theme
+      cTop = "#a16207"; cBot = "#713f12";
+      groundColor = "#451a03"; groundAccent = "#2d0f02";
+      mountainColor = "#713f12"; showStars = false;
+      targetBg = assets.backgrounds.venus;
+    } else if (score < 100) {
+      // Jupiter Theme
+      cTop = "#92400e"; cBot = "#d97706";
+      groundColor = "#78350f"; groundAccent = "#451a03";
+      mountainColor = "#b45309"; showStars = true;
+      targetBg = assets.backgrounds.jupiter;
+    } else if (score < 140) {
+      // Saturn Theme
+      cTop = "#422006"; cBot = "#713f12";
+      groundColor = "#ca8a04"; groundAccent = "#a16207";
+      mountainColor = "#422006"; showStars = true;
+      targetBg = assets.backgrounds.saturn;
+    } else if (score < 190) {
+      // Uranus Theme
+      cTop = "#0891b2"; cBot = "#22d3ee";
+      groundColor = "#0e7490"; groundAccent = "#155e75";
+      mountainColor = "#0891b2"; showStars = true;
+      targetBg = assets.backgrounds.uranus;
+    } else if (score < 250) {
+      // Neptune Theme
+      cTop = "#1e3a8a"; cBot = "#2563eb";
+      groundColor = "#1e40af"; groundAccent = "#1e3a8a";
+      mountainColor = "#1e3a8a"; showStars = true;
+      targetBg = assets.backgrounds.neptune;
     } else {
-      // Phase 4: The Void (Pitch Black -> Hellish Red)
-      cTop = "#000000";
-      cBot = "#991b1b";
+      // Sun Theme (Final)
+      cTop = "#f59e0b"; cBot = "#ef4444";
+      groundColor = "#b91c1c"; groundAccent = "#7f1d1d";
+      mountainColor = "#991b1b"; showStars = false;
+      targetBg = assets.backgrounds.sun;
     }
 
+    // Draw Background Gradient
     const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
     bgGrad.addColorStop(0, cTop);
     bgGrad.addColorStop(1, cBot);
-
     ctx.fillStyle = bgGrad;
     ctx.fillRect(-50, -50, width + 100, height + 100);
 
-    // Stars
-    ctx.globalAlpha = 0.25;
-    ctx.fillStyle = "#cfe8ff";
-    ctx.beginPath(); // Batch stars
-    for (let i = 0; i < 60; i++) {
-      const x = (i * 97 + (timeAlive * 120)) % (width + 40) - 20;
-      const y = (i * 53) % (height - 160) + 30;
-      ctx.rect(x, y, 2, 2);
+    // Draw Stars (Conditional)
+    if (showStars) {
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = "#cfe8ff";
+      ctx.beginPath();
+      for (let i = 0; i < 60; i++) {
+        const x = (i * 97 + (timeAlive * 120)) % (width + 40) - 20;
+        const y = (i * 53) % (height - 160) + 30;
+        ctx.rect(x, y, 2, 2);
+      }
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
-    ctx.fill();
-    ctx.globalAlpha = 1;
+
+    if (this.currentBg !== targetBg) {
+      this.prevBg = this.currentBg;
+      this.currentBg = targetBg;
+      this.bgAlpha = 0;
+    }
+
+    if (this.bgAlpha < 1) {
+      this.bgAlpha += 0.01; // Fade speed
+      if (this.bgAlpha > 1) this.bgAlpha = 1;
+    }
+
+    const drawBg = (img: HTMLImageElement, alpha: number) => {
+      if (!img.complete || img.naturalWidth === 0) return;
+      ctx.globalAlpha = alpha;
+      const bgW = img.naturalWidth;
+      const parallax = 0.15;
+      const scroll = (distance * parallax) % bgW;
+      ctx.drawImage(img, -scroll, 0, bgW, height);
+      ctx.drawImage(img, bgW - scroll, 0, bgW, height);
+      ctx.globalAlpha = 1;
+    };
+
+    if (this.prevBg && this.bgAlpha < 1) {
+      drawBg(this.prevBg, 1 - this.bgAlpha);
+    }
+    if (this.currentBg) {
+      drawBg(this.currentBg, this.bgAlpha);
+    }
 
     // Mountains
-    ctx.fillStyle = "#162035";
+    ctx.fillStyle = mountainColor;
     const mountainScroll = distance * 0.2;
     ctx.beginPath();
     ctx.moveTo(0, height);
@@ -179,10 +268,10 @@ export class Renderer {
 
     // Ground
     const gy = this.groundY();
-    ctx.fillStyle = "#121a2a";
+    ctx.fillStyle = groundColor;
     ctx.fillRect(0, gy, width, CONSTANTS.GROUND_H);
-    ctx.fillStyle = "#1f2b44";
-    ctx.fillRect(0, gy, width, 3);
+    ctx.fillStyle = groundAccent;
+    ctx.fillRect(0, gy, width, 5);
 
     // Footprints
     ctx.fillStyle = "rgba(0,0,0,0.3)";
@@ -249,6 +338,49 @@ export class Renderer {
         ctx.fillStyle = '#eab308'; // Yellow
         ctx.fillRect(o.x + 4, o.y + o.h - 6, o.w - 8, 2);
 
+      }
+      else if (o.type === 'mid') {
+        // Draw Mid-air Obstacle: Security Drone
+        ctx.save();
+        ctx.translate(o.x + o.w / 2, o.y + o.h / 2);
+
+        // Hover bobbing effect
+        const bob = Math.sin(timeAlive * 8) * 4;
+        ctx.translate(0, bob);
+
+        // 1. Drone Body (Spherical/Oval)
+        const bodyGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, 25);
+        bodyGrad.addColorStop(0, '#94a3b8');
+        bodyGrad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, o.w / 2, o.h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Glowing "Eye" (Scanner)
+        const scannerGlow = Math.abs(Math.sin(timeAlive * 5));
+        ctx.fillStyle = `rgba(239, 68, 68, ${0.4 + scannerGlow * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(8, 0, 6, 0, Math.PI * 2);
+        ctx.fill();
+        // Inner lens
+        ctx.fillStyle = '#fca5a5';
+        ctx.beginPath();
+        ctx.arc(10, 0, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. Side Thrusters/Wings
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-o.w / 2 - 5, -2, 8, 4); // Left
+        ctx.fillRect(o.w / 2 - 3, -2, 8, 4);  // Right
+
+        // Thruster Glow
+        ctx.fillStyle = `rgba(56, 189, 248, ${0.3 + scannerGlow * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(-o.w / 2 - 5, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       }
       else if (assets.fence.complete && assets.fence.naturalWidth > 0) {
         const size = CONSTANTS.BLOCK_SIZE;
@@ -336,16 +468,7 @@ export class Renderer {
       const drawSize = 48;
       const offset = drawSize / 2;
 
-      // Visual decay based on deathCount (Maxed at 100)
-      const decay = Math.min(state.deathCount, 100) / 100;
-      const gray = decay * 90;
-      const bright = 100 - (decay * 50);
-      const sepia = decay * 40;
-
-      ctx.save();
-      ctx.filter = `grayscale(${gray}%) brightness(${bright}%) sepia(${sepia}%)`;
       ctx.drawImage(horseAsset, -offset, -offset, drawSize, drawSize);
-      ctx.restore();
 
       // Procedural Scars and Dirt (Starts at 25 deaths)
       if (state.deathCount >= 25) {
@@ -382,21 +505,7 @@ export class Renderer {
         ctx.rotate(flapAngle - 0.1);
 
         // Tattered wings: reaches 0.2 alpha at 100 deaths
-        ctx.globalAlpha = Math.max(0.2, 1 - (state.deathCount * 0.008));
-
-        // Gradual Redness: Starts at 25 deaths, reaches max at 100 deaths
-        if (state.deathCount >= 25) {
-          const redness = Math.min(1, (state.deathCount - 25) / 75);
-          // All filter values now scale with 'redness' to ensure a smooth transition
-          const sepiaVal = redness;
-          const saturateVal = 1 + redness * 20;
-          const hueVal = -65 * redness;
-          const brightVal = 1 - redness * 0.3;
-          const grayVal = redness * 0.5;
-
-          ctx.filter = `grayscale(${grayVal}) sepia(${sepiaVal}) saturate(${saturateVal}) hue-rotate(${hueVal}deg) brightness(${brightVal})`;
-        }
-
+        // Drawing original wings without color filter
         ctx.drawImage(wingsAsset, -15, -10, 30, 20);
         ctx.restore();
       }

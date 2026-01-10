@@ -1,17 +1,38 @@
 import React, { useEffect, useRef } from 'react';
-import { CONSTANTS } from '../game/constants.js';
-import { assets } from '../game/assets.js';
+import type { CSSProperties } from 'react';
+import { CONSTANTS, type SkinDefinition } from '../game/constants';
+import { assets } from '../game/assets';
 
-const CharacterPreview = ({ horseSkin, wingsSkin }) => {
-  const canvasRef = useRef(null);
+type SkinType = 'horse' | 'wings';
+
+type GameUIState = {
+  score: number;
+  best: number;
+  deathCount: number;
+  gameOver: boolean;
+  inMenu: boolean;
+  showTrajectory: boolean;
+  horseSkin: string;
+  wingsSkin: string;
+  isMusicMuted: boolean;
+};
+
+type CharacterPreviewProps = {
+  horseSkin: string;
+  wingsSkin: string;
+};
+
+const CharacterPreview = ({ horseSkin, wingsSkin }: CharacterPreviewProps) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    let animationId;
+    if (!ctx) return;
+    let animationId = 0;
 
-    const render = (time) => {
+    const render = (time: number) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2 + 5;
@@ -61,6 +82,75 @@ const CharacterPreview = ({ horseSkin, wingsSkin }) => {
   );
 };
 
+type UIProps = {
+  gameState: GameUIState;
+  onStart: () => void;
+  onRestart: () => void;
+  onToggleTrajectory: () => void;
+  showSettings: boolean;
+  onToggleSettings: () => void;
+  onSkinChange: (type: SkinType, skinId: string) => void;
+  onToggleMusic: () => void;
+};
+
+const IconButton = ({ children, onClick, title, active = true }: { children: React.ReactNode, onClick: () => void, title?: string, active?: boolean }) => (
+  <button
+    style={{
+      ...styles.settingsBtn,
+      position: 'static',
+      background: active
+        ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9))'
+        : 'rgba(15, 23, 42, 0.8)',
+      backdropFilter: 'blur(8px)',
+      border: active ? '3px solid #a5b4fc' : '3px solid #475569',
+      boxShadow: active
+        ? '0 8px 20px rgba(139, 92, 246, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.2)'
+        : '0 4px 10px rgba(0, 0, 0, 0.3)',
+      color: active ? '#ffffff' : '#94a3b8',
+      transform: 'scale(1)',
+      transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+    }}
+    onClick={onClick}
+    title={title}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'scale(1.1)';
+      if (!active) e.currentTarget.style.borderColor = '#6366f1';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'scale(1)';
+      if (!active) e.currentTarget.style.borderColor = '#475569';
+    }}
+  >
+    {children}
+  </button>
+);
+
+const Icons = {
+  Volume: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+    </svg>
+  ),
+  Mute: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 5L6 9H2V15H6L11 19V5Z"></path>
+      <line x1="23" y1="9" x2="17" y2="15"></line>
+      <line x1="17" y1="9" x2="23" y2="15"></line>
+    </svg>
+  ),
+  Settings: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+    </svg>
+  ),
+};
+
 export default function UI({
   gameState,
   onStart,
@@ -68,11 +158,22 @@ export default function UI({
   onToggleTrajectory,
   showSettings,
   onToggleSettings,
-  onSkinChange
-}) {
-  const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin } = gameState;
+  onSkinChange,
+  onToggleMusic
+}: UIProps) {
+  const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin, isMusicMuted } = gameState;
 
-  const SkinSelector = ({ type, current, skins, onChange }) => (
+  const SkinSelector = ({
+    type,
+    current,
+    skins,
+    onChange
+  }: {
+    type: SkinType;
+    current: string;
+    skins: SkinDefinition[];
+    onChange: (type: SkinType, skinId: string) => void;
+  }) => (
     <div style={styles.skinGroup}>
       <h3 style={styles.skinLabel}>{type === 'horse' ? 'Chọn Ngựa' : 'Chọn Cánh'}</h3>
       <div style={styles.skinList}>
@@ -81,8 +182,9 @@ export default function UI({
             key={skin.id}
             style={{
               ...styles.skinItem,
-              borderColor: current === skin.id ? '#8b5cf6' : '#334155',
-              backgroundColor: current === skin.id ? 'rgba(139, 92, 246, 0.2)' : 'rgba(30, 41, 59, 0.5)'
+              borderColor: current === skin.id ? '#a78bfa' : '#334155',
+              backgroundColor: current === skin.id ? 'rgba(139, 92, 246, 0.3)' : 'rgba(30, 41, 59, 0.5)',
+              transform: current === skin.id ? 'scale(1.05)' : 'scale(1)',
             }}
             onClick={() => onChange(type, skin.id)}
           >
@@ -125,7 +227,7 @@ export default function UI({
 
       {gameOver && (
         <div style={styles.overlay}>
-          <h1 style={{ ...styles.title, color: '#ef4444' }}>GAME OVER</h1>
+          <h1 style={{ ...styles.title, color: '#f87171' }}>GAME OVER</h1>
           <p style={styles.scoreText}>Điểm: {score}</p>
           <p style={styles.subText}>Kỷ lục: {best}</p>
           <p style={styles.subText}>Tổng số lần chết: {deathCount}</p>
@@ -139,10 +241,23 @@ export default function UI({
         </div>
       )}
 
-      {/* Settings Button */}
-      <button style={styles.settingsBtn} onClick={onToggleSettings}>
-        ⚙️
-      </button>
+      {/* Settings & Music Buttons */}
+      <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '12px', zIndex: 100 }}>
+        <IconButton
+          onClick={onToggleMusic}
+          title={isMusicMuted ? "Bật nhạc" : "Tắt nhạc"}
+          active={!isMusicMuted}
+        >
+          {isMusicMuted ? <Icons.Mute /> : <Icons.Volume />}
+        </IconButton>
+        <IconButton
+          onClick={onToggleSettings}
+          title="Cài đặt"
+          active={showSettings}
+        >
+          <Icons.Settings />
+        </IconButton>
+      </div>
 
       {/* Settings Modal */}
       {showSettings && (
@@ -170,7 +285,7 @@ export default function UI({
                 />
               </div>
 
-              <label style={styles.label} htmlFor="trajectory-checkbox">
+              <label style={{ ...styles.label, marginBottom: '12px' }} htmlFor="trajectory-checkbox">
                 <input
                   id="trajectory-checkbox"
                   type="checkbox"
@@ -183,6 +298,20 @@ export default function UI({
                 />
                 Hiện đường kẻ dự đoán
               </label>
+
+              <label style={styles.label} htmlFor="music-checkbox">
+                <input
+                  id="music-checkbox"
+                  type="checkbox"
+                  checked={!isMusicMuted}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleMusic();
+                  }}
+                  style={styles.checkbox}
+                />
+                Nhạc nền: {isMusicMuted ? 'Tắt' : 'Bật'}
+              </label>
             </div>
           </div>
         </div>
@@ -192,7 +321,7 @@ export default function UI({
 }
 
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   overlay: {
     position: 'absolute',
     top: 0, left: 0, width: '100%', height: '100%',
@@ -462,4 +591,3 @@ const styles = {
     borderRadius: '0 0 50% 50%',
   }
 };
-

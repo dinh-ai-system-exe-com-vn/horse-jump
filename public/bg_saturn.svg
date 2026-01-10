@@ -1,0 +1,35 @@
+<svg width="2000" height="1000" viewBox="0 0 2000 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="satSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#422006" />
+      <stop offset="100%" style="stop-color:#1e1b4b" />
+    </linearGradient>
+    <symbol id="geyser" viewBox="0 0 40 100">
+      <path d="M 20 100 Q 0 50 20 0 Q 40 50 20 100" fill="#bae6fd" opacity="0.6" />
+      <circle cx="20" cy="10" r="5" fill="#fff" opacity="0.8" />
+    </symbol>
+  </defs>
+  <!-- Saturn: Massive Ring Arcs, Icy Moon Surfaces, Geysers -->
+  <rect width="2000" height="1000" fill="url(#satSky)" />
+  
+  <!-- Massive Rings stretching across the sky -->
+  <g transform="translate(1000, -300) rotate(-15)" opacity="0.4">
+    <ellipse cx="0" cy="0" rx="2000" ry="500" fill="none" stroke="#eab308" stroke-width="80" />
+    <ellipse cx="0" cy="0" rx="1800" ry="450" fill="none" stroke="#ca8a04" stroke-width="20" />
+  </g>
+
+  <!-- Ground -->
+  <rect x="0" y="800" width="2000" height="200" fill="#1e293b" />
+  
+  <!-- Icy Geysers -->
+  <use href="#geyser" x="300" y="700" width="80" height="200" />
+  <use href="#geyser" x="1200" y="720" width="60" height="150" />
+  <use href="#geyser" x="1700" y="740" width="70" height="180" />
+
+  <!-- Stars -->
+  <g fill="#fff" opacity="0.5">
+    <circle cx="200" cy="100" r="2" />
+    <circle cx="1500" cy="300" r="1.5" />
+    <circle cx="800" cy="400" r="2.5" />
+  </g>
+</svg>

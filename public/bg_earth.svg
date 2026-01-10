@@ -1,0 +1,43 @@
+<svg width="2000" height="1000" viewBox="0 0 2000 1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="earthSky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#7dd3fc" />
+      <stop offset="100%" style="stop-color:#bae6fd" />
+    </linearGradient>
+    <symbol id="bird" viewBox="0 0 20 10">
+      <path d="M 0 5 Q 5 0 10 5 Q 15 0 20 5" stroke="#1e3a8a" stroke-width="2" fill="none" />
+    </symbol>
+    <symbol id="waterfall" viewBox="0 0 40 100">
+      <rect x="0" y="0" width="40" height="100" fill="#3b82f6" />
+      <rect x="5" y="0" width="5" height="100" fill="#fff" opacity="0.4" />
+      <rect x="25" y="0" width="3" height="100" fill="#fff" opacity="0.3" />
+    </symbol>
+  </defs>
+  <!-- Earth: Lush Life, Waterfalls, Birds, Clouds -->
+  <rect width="2000" height="1000" fill="url(#earthSky)" />
+
+  <!-- Birds in the sky -->
+  <use href="#bird" x="300" y="200" width="40" height="20" />
+  <use href="#bird" x="350" y="230" width="30" height="15" />
+  <use href="#bird" x="1200" y="150" width="50" height="25" />
+
+  <!-- Distant Blue Mountains -->
+  <path d="M 0 850 L 400 300 L 800 850 L 1300 400 L 1800 850 Z" fill="#1e40af" opacity="0.3" />
+
+  <!-- Waterfalls on distant mountains -->
+  <use href="#waterfall" x="380" y="300" width="40" height="550" opacity="0.6" />
+  <use href="#waterfall" x="1280" y="400" width="30" height="450" opacity="0.5" />
+
+  <!-- Ground Lushness -->
+  <rect x="0" y="850" width="2000" height="150" fill="#166534" />
+  
+  <!-- Clouds -->
+  <g fill="#fff" opacity="0.8">
+    <circle cx="200" cy="150" r="40" />
+    <circle cx="240" cy="140" r="50" />
+    <circle cx="280" cy="160" r="35" />
+    
+    <circle cx="1500" cy="200" r="60" />
+    <circle cx="1560" cy="180" r="70" />
+  </g>
+</svg>
