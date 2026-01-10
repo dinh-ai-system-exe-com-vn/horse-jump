@@ -36,6 +36,12 @@ export type SpeedConfig = {
 
 export type GameSettings = {
   defaultDifficulty: DifficultyId;
+  view: {
+    targetLogicalWidth: {
+      desktop: number;
+      mobile: number;
+    };
+  };
   speed: SpeedConfig;
   obstacles: {
     initialSpawnRange: {
@@ -84,6 +90,12 @@ export type GameSettings = {
 
 export const GAME_SETTINGS: GameSettings = {
   defaultDifficulty: 'normal',
+  view: {
+    targetLogicalWidth: {
+      desktop: 700,
+      mobile: 900,
+    },
+  },
   speed: {
     mode: 'step',
     base: 500,

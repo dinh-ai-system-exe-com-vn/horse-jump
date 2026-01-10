@@ -1,5 +1,5 @@
 import { assets } from './assets';
-import { CONSTANTS } from './constants';
+import { CONSTANTS, GAME_SETTINGS } from './constants';
 import type { GameState } from './state';
 
 export class Renderer {
@@ -32,10 +32,12 @@ export class Renderer {
     const winW = window.innerWidth;
     const winH = window.innerHeight;
 
-    // Scale Logic: Ensure we see at least ~700 logical pixels of width
-    // On Desktop (e.g. 1920): scale = 1
-    // On Mobile (e.g. 375): scale = 375 / 700 = ~0.53
-    const targetLogicalWidth = 700;
+    // Scale Logic: Ensure we see more ahead on mobile by using a larger logical width
+    const isCoarsePointer =
+      typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+    const targetLogicalWidth = isCoarsePointer
+      ? GAME_SETTINGS.view.targetLogicalWidth.mobile
+      : GAME_SETTINGS.view.targetLogicalWidth.desktop;
     this.gameScale = Math.min(1, winW / targetLogicalWidth);
 
     this.canvas.width = Math.floor(winW * dpr);
