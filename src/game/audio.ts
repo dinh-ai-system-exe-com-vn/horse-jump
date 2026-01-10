@@ -3,6 +3,7 @@ export class AudioManager {
   isMuted: boolean;
   bgMusic: HTMLAudioElement | null = null;
   isMusicMuted: boolean = false;
+  wasAutoPaused: boolean = false;
 
   constructor() {
     const AudioContextClass =
@@ -18,9 +19,11 @@ export class AudioManager {
     this.isMusicMuted = localStorage.getItem('horseJumpMusicMuted') === 'true';
 
     // Initialize background music (respect Vite base for GH Pages)
-    this.bgMusic = new Audio(`${import.meta.env.BASE_URL}bg_music.mp3`);
+    this.bgMusic = new Audio(`${import.meta.env.BASE_URL}bg_music_2.mp3`);
     this.bgMusic.loop = true;
-    this.bgMusic.volume = 0.4;
+    this.bgMusic.volume = 0.25;
+
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   playTone(freq: number, type: OscillatorType, duration: number, startTime = 0, vol = 0.1) {
@@ -42,11 +45,11 @@ export class AudioManager {
   }
 
   jump() {
-    this.playTone(200, "sine", 0.1, 0, 0.1);
+    this.playTone(200, "sine", 0.1, 0, 0.3);
   }
 
   crash() {
-    this.playTone(100, "sawtooth", 0.3, 0, 0.2);
+    this.playTone(100, "sawtooth", 0.3, 0, 0.3);
   }
 
   resume() {
@@ -55,6 +58,24 @@ export class AudioManager {
     }
     this.playMusic();
   }
+
+  handleVisibilityChange = () => {
+    if (document.hidden) {
+      this.wasAutoPaused = true;
+      this.stopMusic();
+      if (this.audioCtx.state === 'running') {
+        this.audioCtx.suspend().catch((e) => console.warn('Audio suspend failed', e));
+      }
+      return;
+    }
+
+    if (!this.wasAutoPaused) return;
+    this.wasAutoPaused = false;
+    if (this.audioCtx.state === 'suspended') {
+      this.audioCtx.resume().catch((e) => console.warn('Audio resume failed', e));
+    }
+    this.playMusic();
+  };
 
   playMusic() {
     if (!this.bgMusic || this.isMusicMuted) return;
