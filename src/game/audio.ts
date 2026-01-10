@@ -17,8 +17,8 @@ export class AudioManager {
     // Load preference
     this.isMusicMuted = localStorage.getItem('horseJumpMusicMuted') === 'true';
 
-    // Initialize background music
-    this.bgMusic = new Audio('/bg_music.mp3');
+    // Initialize background music (respect Vite base for GH Pages)
+    this.bgMusic = new Audio(`${import.meta.env.BASE_URL}bg_music.mp3`);
     this.bgMusic.loop = true;
     this.bgMusic.volume = 0.4;
   }
