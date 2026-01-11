@@ -5,8 +5,9 @@ import Leaderboard from './components/Leaderboard';
 import type { GameEngine } from './game/engine';
 import type { GameState } from './game/state';
 import { audioManager } from './game/audio';
-import { auth, googleProvider } from './firebase';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { ref, query, orderByChild, limitToLast, onValue } from 'firebase/database';
+import { auth, googleProvider, database } from './firebase';
 
 type GameUIState = {
   score: number;
@@ -18,13 +19,14 @@ type GameUIState = {
   horseSkin: string;
   wingsSkin: string;
   isMusicMuted: boolean;
+  globalBest: number;
 };
 
 export default function App() {
   const [engine, setEngine] = useState<GameEngine | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [nickname, setNickname] = useState(localStorage.getItem('playerName') || "");
-  
+
   const [gameState, setGameState] = useState<GameUIState>({
     score: 0,
     best: 0,
@@ -35,6 +37,7 @@ export default function App() {
     horseSkin: localStorage.getItem('chargeJumpHorse') || 'default',
     wingsSkin: localStorage.getItem('chargeJumpWings') || 'default',
     isMusicMuted: audioManager.isMusicMuted,
+    globalBest: 0,
   });
 
   const [showSettings, setShowSettings] = useState(false);
@@ -66,6 +69,20 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Fetch Global Best
+  useEffect(() => {
+    const scoresRef = ref(database, 'scores');
+    const bestQuery = query(scoresRef, orderByChild('score'), limitToLast(1));
+    const unsubscribe = onValue(bestQuery, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const topScore = Object.values(data)[0] as any;
+        setGameState(prev => ({ ...prev, globalBest: topScore.score }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleLogin = async () => {
     console.log("Login button clicked. Attempting login...");
     try {
@@ -74,19 +91,19 @@ export default function App() {
       console.log("Popup login success:", result.user.displayName);
     } catch (error: any) {
       console.warn("Popup login failed or blocked:", error.code, error.message);
-      
-      if (error.code === 'auth/popup-blocked' || 
-          error.code === 'auth/operation-not-supported-in-this-environment' ||
-          error.code === 'auth/auth-domain-config-required') {
+
+      if (error.code === 'auth/popup-blocked' ||
+        error.code === 'auth/operation-not-supported-in-this-environment' ||
+        error.code === 'auth/auth-domain-config-required') {
         console.log("Attempting Redirect login as fallback...");
         try {
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectError: any) {
           console.error("Redirect login also failed:", redirectError.message);
-          alert("Không thể mở cửa sổ đăng nhập. Hãy kiểm tra cài đặt chặn pop-up của trình duyệt hoặc cấu hình Firebase.");
+          // alert("Không thể mở cửa sổ đăng nhập. Hãy kiểm tra cài đặt chặn pop-up của trình duyệt hoặc cấu hình Firebase.");
         }
       } else {
-        alert("Lỗi đăng nhập: " + error.message);
+        // alert("Lỗi đăng nhập: " + error.message);
       }
     }
   };
@@ -118,6 +135,7 @@ export default function App() {
         horseSkin: state.player.horseSkin,
         wingsSkin: state.player.wingsSkin,
         isMusicMuted: audioManager.isMusicMuted,
+        globalBest: prev.globalBest, // Keep global best from Firebase
       }));
     };
     eng.onUIUpdate(eng.state);
@@ -167,7 +185,7 @@ export default function App() {
         if (e.code === "Space" || e.code === "Enter") {
           const target = document.activeElement;
           if (target && target.tagName === 'INPUT') return; // Don't trigger game start if typing
-          
+
           if (engine.state.inMenu) handleStart();
           else handleRestart();
         }

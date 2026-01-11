@@ -16,6 +16,7 @@ type GameUIState = {
   horseSkin: string;
   wingsSkin: string;
   isMusicMuted: boolean;
+  globalBest: number;
 };
 
 type CharacterPreviewProps = {
@@ -94,6 +95,8 @@ type UIProps = {
   onToggleMusic: () => void;
   onSaveScore: (playerName: string) => void;
   onShowLeaderboard: () => void;
+  nickname: string;
+  onUpdateNickname: (newNickname: string) => void;
 };
 
 const IconButton = ({ children, onClick, title, active = true }: { children: React.ReactNode, onClick: () => void, title?: string, active?: boolean }) => (
@@ -140,8 +143,8 @@ const Icons = {
   ),
   Settings: () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
       <circle cx="12" cy="12" r="3"></circle>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
   ),
   Trophy: () => (
@@ -177,9 +180,11 @@ export default function UI({
   onSkinChange,
   onToggleMusic,
   onSaveScore,
-  onShowLeaderboard
+  onShowLeaderboard,
+  nickname,
+  onUpdateNickname
 }: UIProps) {
-  const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin, isMusicMuted } = gameState;
+  const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin, isMusicMuted, globalBest } = gameState;
   const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || "");
   const [hasSaved, setHasSaved] = useState(false);
 
@@ -263,8 +268,8 @@ export default function UI({
 
           <div style={{ display: 'flex', gap: '15px' }}>
             <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
-            <button 
-              style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }} 
+            <button
+              style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }}
               onClick={onShowLeaderboard}
             >
               Hạng
@@ -278,8 +283,8 @@ export default function UI({
         <div style={styles.overlay}>
           <h1 style={{ ...styles.title, color: '#f87171' }}>GAME OVER</h1>
           <p style={styles.scoreText}>Điểm: {score}</p>
-          <p style={styles.subText}>Kỷ lục: {best}</p>
-          
+          <p style={styles.subText}>Kỷ lục: {best} &nbsp; Toàn cầu: {globalBest}</p>
+
           <div style={styles.saveContainer}>
             {user ? (
               <>
@@ -291,12 +296,12 @@ export default function UI({
                   style={styles.input}
                   maxLength={15}
                 />
-                <button 
-                  style={{ 
-                    ...styles.miniButton, 
+                <button
+                  style={{
+                    ...styles.miniButton,
                     opacity: (hasSaved || playerName.trim() === "") ? 0.5 : 1,
                     cursor: (hasSaved || playerName.trim() === "") ? 'default' : 'pointer'
-                  }} 
+                  }}
                   onClick={handleSaveScore}
                   disabled={hasSaved || playerName.trim() === ""}
                 >
@@ -304,8 +309,8 @@ export default function UI({
                 </button>
               </>
             ) : (
-              <button 
-                style={{ ...styles.miniButton, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }} 
+              <button
+                style={{ ...styles.miniButton, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
                 onClick={onLogin}
               >
                 <Icons.Google /> Đăng nhập để lưu điểm
@@ -315,8 +320,8 @@ export default function UI({
 
           <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
             <button style={styles.button} onClick={onRestart}>CHƠI LẠI</button>
-            <button 
-              style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }} 
+            <button
+              style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }}
               onClick={onShowLeaderboard}
             >
               BXH
@@ -327,7 +332,7 @@ export default function UI({
 
       {!inMenu && !gameOver && (
         <div style={styles.hud}>
-          Score: {score} &nbsp; Best: {best}
+          Score: {score} &nbsp; Best: {best} &nbsp; Global: {globalBest}
         </div>
       )}
 
@@ -345,7 +350,7 @@ export default function UI({
         <IconButton
           onClick={onToggleSettings}
           title="Cài đặt"
-          active={showSettings}
+          active={true}
         >
           <Icons.Settings />
         </IconButton>
@@ -359,7 +364,7 @@ export default function UI({
               <button style={styles.closeBtn} onClick={onToggleSettings}>✖</button>
             </div>
             <div style={styles.modalBody}>
-              
+
               {user ? (
                 <div style={styles.settingsUserSection}>
                   <img src={user.photoURL || ""} alt="avatar" style={styles.avatar} />
@@ -375,12 +380,12 @@ export default function UI({
               )}
 
               <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
-              
+
               <div style={{ width: '100%', marginBottom: '20px' }}>
                 <SkinSelector type="horse" current={horseSkin} skins={CONSTANTS.HORSE_SKINS} onChange={onSkinChange} />
                 <SkinSelector type="wings" current={wingsSkin} skins={CONSTANTS.WINGS_SKINS} onChange={onSkinChange} />
               </div>
-              
+
               <label style={{ ...styles.label, marginBottom: '12px' }}>
                 <input type="checkbox" checked={showTrajectory} onChange={onToggleTrajectory} style={styles.checkbox} />
                 Hiện đường kẻ dự đoán
