@@ -1,6 +1,7 @@
 import React, { useEffect, useState, type CSSProperties } from 'react';
 import { getDatabase, ref, onValue, query, orderByChild, limitToLast } from 'firebase/database';
 import { database } from '../firebase';
+import { translations, type Language } from '../i18n';
 
 type Score = {
   name: string;
@@ -11,11 +12,13 @@ type Score = {
 
 type LeaderboardProps = {
   onClose: () => void;
+  language: Language;
 };
 
-const Leaderboard = ({ onClose }: LeaderboardProps) => {
+const Leaderboard = ({ onClose, language }: LeaderboardProps) => {
   const [scores, setScores] = useState<Score[]>([]);
   const [loading, setLoading] = useState(true);
+  const t = translations[language];
 
   useEffect(() => {
     const scoresRef = ref(database, 'scores');
@@ -39,23 +42,23 @@ const Leaderboard = ({ onClose }: LeaderboardProps) => {
     <div style={styles.modalOverlay}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <span style={styles.modalTitle}>Bảng Xếp Hạng</span>
+          <span style={styles.modalTitle}>{t.leaderboard}</span>
           <button style={styles.closeBtn} onClick={onClose}>✖</button>
         </div>
         <div style={styles.modalBody}>
           {loading ? (
-            <p style={styles.statusText}>Đang tải...</p>
+            <p style={styles.statusText}>{t.loading}</p>
           ) : scores.length === 0 ? (
-            <p style={styles.statusText}>Chưa có kỷ lục nào.</p>
+            <p style={styles.statusText}>{t.noRecords}</p>
           ) : (
             <div style={styles.tableContainer}>
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.tableHeaderRow}>
-                    <th style={styles.th}>Hạng</th>
-                    <th style={styles.th}>Người chơi</th>
-                    <th style={styles.thCenter}>Số nhảy</th>
-                    <th style={styles.thCenter}>Điểm</th>
+                    <th style={styles.th}>{t.rank}</th>
+                    <th style={styles.th}>{t.player}</th>
+                    <th style={styles.thCenter}>{t.jumps}</th>
+                    <th style={styles.thCenter}>{t.score}</th>
                   </tr>
                 </thead>
                 <tbody>

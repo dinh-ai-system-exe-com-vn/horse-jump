@@ -42,6 +42,12 @@ export default function App() {
 
   const [showSettings, setShowSettings] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [language, setLanguage] = useState<'vi' | 'en'>((localStorage.getItem('language') as 'vi' | 'en') || 'vi');
+
+  const handleLanguageChange = (lang: 'vi' | 'en') => {
+    setLanguage(lang);
+    localStorage.setItem('language', lang);
+  };
 
   useEffect(() => {
     // Check for redirect result
@@ -241,8 +247,10 @@ export default function App() {
         onToggleMusic={handleToggleMusic}
         onSaveScore={handleSaveScore}
         onShowLeaderboard={() => setShowLeaderboard(true)}
+        language={language}
+        onLanguageChange={handleLanguageChange}
       />
-      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} language={language} />}
     </div>
   );
 }

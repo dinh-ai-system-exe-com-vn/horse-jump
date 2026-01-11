@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import { CONSTANTS, type SkinDefinition } from '../game/constants';
 import { assets } from '../game/assets';
 import { User } from 'firebase/auth';
+import { translations, type Language } from '../i18n';
 
 type SkinType = 'horse' | 'wings';
 
@@ -22,9 +23,10 @@ type GameUIState = {
 type CharacterPreviewProps = {
   horseSkin: string;
   wingsSkin: string;
+  t: typeof translations.vi;
 };
 
-const CharacterPreview = ({ horseSkin, wingsSkin }: CharacterPreviewProps) => {
+const CharacterPreview = ({ horseSkin, wingsSkin, t }: CharacterPreviewProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -76,7 +78,7 @@ const CharacterPreview = ({ horseSkin, wingsSkin }: CharacterPreviewProps) => {
         height={100}
         style={styles.previewCanvas}
       />
-      <div style={styles.previewLabel}>Xem trước</div>
+      <div style={styles.previewLabel}>{t.preview}</div>
     </div>
   );
 };
@@ -97,6 +99,8 @@ type UIProps = {
   onShowLeaderboard: () => void;
   nickname: string;
   onUpdateNickname: (newNickname: string) => void;
+  language: Language;
+  onLanguageChange: (lang: Language) => void;
 };
 
 const IconButton = ({ children, onClick, title, active = true }: { children: React.ReactNode, onClick: () => void, title?: string, active?: boolean }) => (
@@ -182,11 +186,14 @@ export default function UI({
   onSaveScore,
   onShowLeaderboard,
   nickname,
-  onUpdateNickname
+  onUpdateNickname,
+  language,
+  onLanguageChange
 }: UIProps) {
   const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin, isMusicMuted, globalBest } = gameState;
   const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || "");
   const [hasSaved, setHasSaved] = useState(false);
+  const t = translations[language];
 
   useEffect(() => {
     if (user) {
@@ -222,22 +229,29 @@ export default function UI({
     onChange: (type: SkinType, skinId: string) => void;
   }) => (
     <div style={styles.skinGroup}>
-      <h3 style={styles.skinLabel}>{type === 'horse' ? 'Chọn Ngựa' : 'Chọn Cánh'}</h3>
+      <h3 style={styles.skinLabel}>{type === 'horse' ? t.selectHorse : t.selectWings}</h3>
       <div style={styles.skinList}>
-        {skins.map(skin => (
-          <div
-            key={skin.id}
-            style={{
-              ...styles.skinItem,
-              borderColor: current === skin.id ? '#a78bfa' : '#334155',
-              backgroundColor: current === skin.id ? 'rgba(139, 92, 246, 0.3)' : 'rgba(30, 41, 59, 0.5)',
-              transform: current === skin.id ? 'scale(1.05)' : 'scale(1)',
-            }}
-            onClick={() => onChange(type, skin.id)}
-          >
-            {skin.name}
-          </div>
-        ))}
+        {skins.map(skin => {
+          // Dynamic key lookup for translation
+          const key = type === 'horse' ? `skin_${skin.id}` : `wing_${skin.id}`;
+          // @ts-ignore - we know these keys exist in translation file matching constants
+          const displayName = t[key] || skin.name;
+
+          return (
+            <div
+              key={skin.id}
+              style={{
+                ...styles.skinItem,
+                borderColor: current === skin.id ? '#a78bfa' : '#334155',
+                backgroundColor: current === skin.id ? 'rgba(139, 92, 246, 0.3)' : 'rgba(30, 41, 59, 0.5)',
+                transform: current === skin.id ? 'scale(1.05)' : 'scale(1)',
+              }}
+              onClick={() => onChange(type, skin.id)}
+            >
+              {displayName}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -246,10 +260,10 @@ export default function UI({
     <>
       {inMenu && (
         <div style={styles.overlay}>
-          <h1 style={styles.title}>NGỰA CHIẾN</h1>
-          <p style={styles.subText}>Số lần tử trận: {deathCount}</p>
+          <h1 style={styles.title}>{t.gameTitle}</h1>
+          <p style={styles.subText}>{t.deaths}: {deathCount}</p>
 
-          <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
+          <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} t={t} />
 
           <div style={styles.selectionContainer}>
             <SkinSelector
@@ -267,30 +281,30 @@ export default function UI({
           </div>
 
           <div style={{ display: 'flex', gap: '15px' }}>
-            <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
+            <button style={styles.button} onClick={onStart}>{t.start}</button>
             <button
               style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }}
               onClick={onShowLeaderboard}
             >
-              Hạng
+              {t.rank}
             </button>
           </div>
-          <p style={styles.hint}>Giữ chuột/màn hình để nạp lực nhảy.</p>
+          <p style={styles.hint}>{t.instruction}</p>
         </div>
       )}
 
       {gameOver && (
         <div style={styles.overlay}>
-          <h1 style={{ ...styles.title, color: '#f87171' }}>GAME OVER</h1>
-          <p style={styles.scoreText}>Điểm: {score}</p>
-          <p style={styles.subText}>Kỷ lục: {best} &nbsp; Toàn cầu: {globalBest}</p>
+          <h1 style={{ ...styles.title, color: '#f87171' }}>{t.gameOver}</h1>
+          <p style={styles.scoreText}>{t.score}: {score}</p>
+          <p style={styles.subText}>{t.best}: {best} &nbsp; {t.global}: {globalBest}</p>
 
           <div style={styles.saveContainer}>
             {user ? (
               <>
                 <input
                   type="text"
-                  placeholder="Nhập tên của bạn"
+                  placeholder={t.enterName}
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   style={styles.input}
@@ -305,7 +319,7 @@ export default function UI({
                   onClick={handleSaveScore}
                   disabled={hasSaved || playerName.trim() === ""}
                 >
-                  {hasSaved ? 'Đã lưu' : 'Lưu điểm'}
+                  {hasSaved ? t.saved : t.saveScore}
                 </button>
               </>
             ) : (
@@ -313,18 +327,18 @@ export default function UI({
                 style={{ ...styles.miniButton, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }}
                 onClick={onLogin}
               >
-                <Icons.Google /> Đăng nhập để lưu điểm
+                <Icons.Google /> {t.loginToSave}
               </button>
             )}
           </div>
 
           <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-            <button style={styles.button} onClick={onRestart}>CHƠI LẠI</button>
+            <button style={styles.button} onClick={onRestart}>{t.playAgain}</button>
             <button
               style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }}
               onClick={onShowLeaderboard}
             >
-              BXH
+              {t.leaderboardShort}
             </button>
           </div>
         </div>
@@ -332,24 +346,24 @@ export default function UI({
 
       {!inMenu && !gameOver && (
         <div style={styles.hud}>
-          Score: {score} &nbsp; Best: {best} &nbsp; Global: {globalBest}
+          {t.score}: {score} &nbsp; {t.best}: {best} &nbsp; {t.global}: {globalBest}
         </div>
       )}
 
       <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '12px', zIndex: 100 }}>
-        <IconButton onClick={onShowLeaderboard} title="Bảng xếp hạng">
+        <IconButton onClick={onShowLeaderboard} title={t.leaderboard}>
           <Icons.Trophy />
         </IconButton>
         <IconButton
           onClick={onToggleMusic}
-          title={isMusicMuted ? "Bật nhạc" : "Tắt nhạc"}
+          title={isMusicMuted ? t.unmute : t.mute}
           active={!isMusicMuted}
         >
           {isMusicMuted ? <Icons.Mute /> : <Icons.Volume />}
         </IconButton>
         <IconButton
           onClick={onToggleSettings}
-          title="Cài đặt"
+          title={t.settings}
           active={true}
         >
           <Icons.Settings />
@@ -360,7 +374,7 @@ export default function UI({
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
             <div style={styles.modalHeader}>
-              <span style={styles.modalTitle}>Cài Đặt</span>
+              <span style={styles.modalTitle}>{t.settings}</span>
               <button style={styles.closeBtn} onClick={onToggleSettings}>✖</button>
             </div>
             <div style={styles.modalBody}>
@@ -370,16 +384,16 @@ export default function UI({
                   <img src={user.photoURL || ""} alt="avatar" style={styles.avatar} />
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span style={styles.userName}>{user.displayName}</span>
-                    <button onClick={onLogout} style={styles.logoutBtn}>Đăng xuất</button>
+                    <button onClick={onLogout} style={styles.logoutBtn}>{t.logout}</button>
                   </div>
                 </div>
               ) : (
                 <button onClick={onLogin} style={{ ...styles.loginBtn, marginBottom: '20px', width: '100%', justifyContent: 'center' }}>
-                  <Icons.Google /> Đăng nhập với Google
+                  <Icons.Google /> {t.loginGoogle}
                 </button>
               )}
 
-              <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
+              <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} t={t} />
 
               <div style={{ width: '100%', marginBottom: '20px' }}>
                 <SkinSelector type="horse" current={horseSkin} skins={CONSTANTS.HORSE_SKINS} onChange={onSkinChange} />
@@ -388,12 +402,38 @@ export default function UI({
 
               <label style={{ ...styles.label, marginBottom: '12px' }}>
                 <input type="checkbox" checked={showTrajectory} onChange={onToggleTrajectory} style={styles.checkbox} />
-                Hiện đường kẻ dự đoán
+                {t.showTrajectory}
               </label>
               <label style={styles.label}>
                 <input type="checkbox" checked={!isMusicMuted} onChange={onToggleMusic} style={styles.checkbox} />
-                Nhạc nền: {isMusicMuted ? 'Tắt' : 'Bật'}
+                {t.music}: {isMusicMuted ? t.off : t.on}
               </label>
+
+              <div style={styles.label}>
+                <span style={{ marginRight: 'auto' }}>{t.language}</span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    style={{
+                      ...styles.miniButton,
+                      background: language === 'vi' ? '#6366f1' : 'rgba(30, 41, 59, 0.5)',
+                      border: language === 'vi' ? '2px solid #a5b4fc' : '2px solid transparent',
+                    }}
+                    onClick={() => onLanguageChange('vi')}
+                  >
+                    VI
+                  </button>
+                  <button
+                    style={{
+                      ...styles.miniButton,
+                      background: language === 'en' ? '#6366f1' : 'rgba(30, 41, 59, 0.5)',
+                      border: language === 'en' ? '2px solid #a5b4fc' : '2px solid transparent',
+                    }}
+                    onClick={() => onLanguageChange('en')}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
