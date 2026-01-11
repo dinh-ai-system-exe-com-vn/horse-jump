@@ -1,4 +1,6 @@
 import { GAME_SETTINGS, CONSTANTS, type DifficultyId } from './constants';
+import { getDatabase, ref, push, set } from "firebase/database";
+import { database } from '../firebase'; // Import the initialized database
 
 export type PlayerState = {
   x: number;
@@ -104,6 +106,16 @@ export class GameState {
       this.best = this.score;
       localStorage.setItem('chargeJumpBest', String(this.best));
     }
+  }
+
+  saveScoreToFirebase(playerName: string) {
+    const scoresRef = ref(database, 'scores');
+    const newScoreRef = push(scoresRef);
+    set(newScoreRef, {
+      name: playerName,
+      score: this.score,
+      createdAt: new Date().toISOString()
+    });
   }
 
   saveDeaths() {

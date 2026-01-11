@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import GameCanvas from './components/GameCanvas';
 import UI from './components/UI';
+import Leaderboard from './components/Leaderboard';
 import type { GameEngine } from './game/engine';
 import type { GameState } from './game/state';
 import { audioManager } from './game/audio';
@@ -19,8 +20,6 @@ type GameUIState = {
 
 export default function App() {
   const [engine, setEngine] = useState<GameEngine | null>(null);
-  // We duplicate state in React for UI rendering only. 
-  // The engine holds the source of truth for the loop.
   const [gameState, setGameState] = useState<GameUIState>({
     score: 0,
     best: 0,
@@ -34,10 +33,10 @@ export default function App() {
   });
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const handleGameInit = useCallback((eng: GameEngine) => {
     setEngine(eng);
-    // Override the engine's UI callback to update React state
     eng.onUIUpdate = (state: GameState) => {
       setGameState(prev => ({
         score: state.score,
@@ -51,7 +50,6 @@ export default function App() {
         isMusicMuted: audioManager.isMusicMuted,
       }));
     };
-    // Initial sync
     eng.onUIUpdate(eng.state);
   }, []);
 
@@ -74,20 +72,23 @@ export default function App() {
       engine.state.player.wingsSkin = skinId;
       localStorage.setItem('chargeJumpWings', skinId);
     }
-    // Trigger a sync
     engine.onUIUpdate(engine.state);
   };
 
-  // Input Listeners attached to Window/Document for global capture
+  const handleSaveScore = (playerName: string) => {
+    engine?.state.saveScoreToFirebase(playerName);
+    setShowLeaderboard(true);
+  };
+
+  // Input Listeners
   useEffect(() => {
     if (!engine) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showSettings) return;
+      if (showSettings || showLeaderboard) return;
       if (e.repeat) return;
       if (e.code === "Space" || e.code === "ArrowUp") engine.press();
 
-      // Menu/Game Over shortcuts
       if (engine.state.inMenu || engine.state.gameOver) {
         if (e.code === "Space" || e.code === "Enter") {
           if (engine.state.inMenu) handleStart();
@@ -96,33 +97,17 @@ export default function App() {
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (showSettings) return;
+      if (showSettings || showLeaderboard) return;
       if (e.code === "Space" || e.code === "ArrowUp") engine.release();
     };
     const handleMouseDown = (e: MouseEvent) => {
-      if (showSettings) return;
-      // If clicking a button, don't jump (React handles button click)
+      if (showSettings || showLeaderboard) return;
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'LABEL')) return;
+      if (target && (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'LABEL' || target.tagName === 'svg' || target.tagName === 'path')) return;
       engine.press();
     };
     const handleMouseUp = () => {
-      if (showSettings) return;
-      engine.release();
-    };
-    const handleTouchStart = (e: TouchEvent) => {
-      if (showSettings) return;
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'LABEL')) return;
-      // Prevent default only if we are not on a button, to stop scrolling/zooming
-      if (e.cancelable) e.preventDefault();
-      engine.press();
-    };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (showSettings) return;
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'LABEL')) return;
-      if (e.cancelable) e.preventDefault();
+      if (showSettings || showLeaderboard) return;
       engine.release();
     };
 
@@ -130,18 +115,14 @@ export default function App() {
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('touchstart', handleTouchStart, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [engine, showSettings]);
+  }, [engine, showSettings, showLeaderboard]);
 
   return (
     <div
@@ -158,7 +139,10 @@ export default function App() {
         onToggleSettings={() => setShowSettings(!showSettings)}
         onSkinChange={handleSkinChange}
         onToggleMusic={handleToggleMusic}
+        onSaveScore={handleSaveScore}
+        onShowLeaderboard={() => setShowLeaderboard(true)}
       />
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
     </div>
   );
 }

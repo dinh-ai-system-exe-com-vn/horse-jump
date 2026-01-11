@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { CONSTANTS, type SkinDefinition } from '../game/constants';
 import { assets } from '../game/assets';
@@ -42,11 +42,9 @@ const CharacterPreview = ({ horseSkin, wingsSkin }: CharacterPreviewProps) => {
       ctx.save();
       ctx.translate(centerX, centerY);
 
-      // Floating animation
       const floatY = Math.sin(time * 0.005) * 3;
       ctx.translate(0, floatY);
 
-      // Draw Wings (if loaded)
       if (wingsAsset && wingsAsset.complete && wingsAsset.naturalWidth > 0) {
         ctx.save();
         ctx.translate(-15, -12);
@@ -56,7 +54,6 @@ const CharacterPreview = ({ horseSkin, wingsSkin }: CharacterPreviewProps) => {
         ctx.restore();
       }
 
-      // Draw Horse (if loaded)
       if (horseAsset && horseAsset.complete && horseAsset.naturalWidth > 0) {
         ctx.drawImage(horseAsset, -24, -24, 48, 48);
       }
@@ -91,6 +88,8 @@ type UIProps = {
   onToggleSettings: () => void;
   onSkinChange: (type: SkinType, skinId: string) => void;
   onToggleMusic: () => void;
+  onSaveScore: (playerName: string) => void;
+  onShowLeaderboard: () => void;
 };
 
 const IconButton = ({ children, onClick, title, active = true }: { children: React.ReactNode, onClick: () => void, title?: string, active?: boolean }) => (
@@ -116,14 +115,6 @@ const IconButton = ({ children, onClick, title, active = true }: { children: Rea
     }}
     onClick={onClick}
     title={title}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = 'scale(1.1)';
-      if (!active) e.currentTarget.style.borderColor = '#6366f1';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = 'scale(1)';
-      if (!active) e.currentTarget.style.borderColor = '#475569';
-    }}
   >
     {children}
   </button>
@@ -149,6 +140,16 @@ const Icons = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
   ),
+  Trophy: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+      <path d="M4 22h16"></path>
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+    </svg>
+  )
 };
 
 export default function UI({
@@ -159,9 +160,27 @@ export default function UI({
   showSettings,
   onToggleSettings,
   onSkinChange,
-  onToggleMusic
+  onToggleMusic,
+  onSaveScore,
+  onShowLeaderboard
 }: UIProps) {
   const { score, best, deathCount, gameOver, inMenu, showTrajectory, horseSkin, wingsSkin, isMusicMuted } = gameState;
+  const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || "");
+  const [hasSaved, setHasSaved] = useState(false);
+
+  const handleSaveScore = () => {
+    if (playerName.trim() !== "" && !hasSaved) {
+      localStorage.setItem('playerName', playerName.trim());
+      onSaveScore(playerName.trim());
+      setHasSaved(true);
+    }
+  };
+
+  useEffect(() => {
+    if (gameOver) {
+      setHasSaved(false);
+    }
+  }, [gameOver]);
 
   const SkinSelector = ({
     type,
@@ -197,7 +216,6 @@ export default function UI({
 
   return (
     <>
-      {/* HUD & Overlays */}
       {inMenu && (
         <div style={styles.overlay}>
           <h1 style={styles.title}>NGỰA CHIẾN</h1>
@@ -220,7 +238,15 @@ export default function UI({
             />
           </div>
 
-          <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button style={styles.button} onClick={onStart}>BẮT ĐẦU</button>
+            <button 
+              style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }} 
+              onClick={onShowLeaderboard}
+            >
+              Hạng
+            </button>
+          </div>
           <p style={styles.hint}>Giữ chuột/màn hình để nạp lực nhảy.</p>
         </div>
       )}
@@ -230,19 +256,51 @@ export default function UI({
           <h1 style={{ ...styles.title, color: '#f87171' }}>GAME OVER</h1>
           <p style={styles.scoreText}>Điểm: {score}</p>
           <p style={styles.subText}>Kỷ lục: {best}</p>
-          <p style={styles.subText}>Tổng số lần chết: {deathCount}</p>
-          <button style={styles.button} onClick={onRestart}>CHƠI LẠI</button>
+          
+          <div style={styles.saveContainer}>
+            <input
+              type="text"
+              placeholder="Nhập tên của bạn"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              style={styles.input}
+              maxLength={15}
+            />
+            <button 
+              style={{ 
+                ...styles.miniButton, 
+                opacity: (hasSaved || playerName.trim() === "") ? 0.5 : 1,
+                cursor: (hasSaved || playerName.trim() === "") ? 'default' : 'pointer'
+              }} 
+              onClick={handleSaveScore}
+              disabled={hasSaved || playerName.trim() === ""}
+            >
+              {hasSaved ? 'Đã lưu' : 'Lưu điểm'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
+            <button style={styles.button} onClick={onRestart}>CHƠI LẠI</button>
+            <button 
+              style={{ ...styles.button, background: 'linear-gradient(to bottom, #f59e0b, #d97706)' }} 
+              onClick={onShowLeaderboard}
+            >
+              BXH
+            </button>
+          </div>
         </div>
       )}
 
       {!inMenu && !gameOver && (
         <div style={styles.hud}>
-          Score: {score} &nbsp; Best: {best} &nbsp; <span style={{ fontSize: '16px', opacity: 0.7 }}>Deaths: {deathCount}</span>
+          Score: {score} &nbsp; Best: {best}
         </div>
       )}
 
-      {/* Settings & Music Buttons */}
       <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '12px', zIndex: 100 }}>
+        <IconButton onClick={onShowLeaderboard} title="Bảng xếp hạng">
+          <Icons.Trophy />
+        </IconButton>
         <IconButton
           onClick={onToggleMusic}
           title={isMusicMuted ? "Bật nhạc" : "Tắt nhạc"}
@@ -259,7 +317,6 @@ export default function UI({
         </IconButton>
       </div>
 
-      {/* Settings Modal */}
       {showSettings && (
         <div style={styles.modalOverlay}>
           <div style={styles.modal}>
@@ -269,47 +326,16 @@ export default function UI({
             </div>
             <div style={styles.modalBody}>
               <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
-
               <div style={{ width: '100%', marginBottom: '20px' }}>
-                <SkinSelector
-                  type="horse"
-                  current={horseSkin}
-                  skins={CONSTANTS.HORSE_SKINS}
-                  onChange={onSkinChange}
-                />
-                <SkinSelector
-                  type="wings"
-                  current={wingsSkin}
-                  skins={CONSTANTS.WINGS_SKINS}
-                  onChange={onSkinChange}
-                />
+                <SkinSelector type="horse" current={horseSkin} skins={CONSTANTS.HORSE_SKINS} onChange={onSkinChange} />
+                <SkinSelector type="wings" current={wingsSkin} skins={CONSTANTS.WINGS_SKINS} onChange={onSkinChange} />
               </div>
-
-              <label style={{ ...styles.label, marginBottom: '12px' }} htmlFor="trajectory-checkbox">
-                <input
-                  id="trajectory-checkbox"
-                  type="checkbox"
-                  checked={showTrajectory}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onToggleTrajectory();
-                  }}
-                  style={styles.checkbox}
-                />
+              <label style={{ ...styles.label, marginBottom: '12px' }}>
+                <input type="checkbox" checked={showTrajectory} onChange={onToggleTrajectory} style={styles.checkbox} />
                 Hiện đường kẻ dự đoán
               </label>
-
-              <label style={styles.label} htmlFor="music-checkbox">
-                <input
-                  id="music-checkbox"
-                  type="checkbox"
-                  checked={!isMusicMuted}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onToggleMusic();
-                  }}
-                  style={styles.checkbox}
-                />
+              <label style={styles.label}>
+                <input type="checkbox" checked={!isMusicMuted} onChange={onToggleMusic} style={styles.checkbox} />
                 Nhạc nền: {isMusicMuted ? 'Tắt' : 'Bật'}
               </label>
             </div>
@@ -320,24 +346,23 @@ export default function UI({
   );
 }
 
-
 const styles: Record<string, CSSProperties> = {
   overlay: {
     position: 'absolute',
     top: 0, left: 0, width: '100%', height: '100%',
     display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: 'rgba(11, 15, 23, 0.75)', // Match game BG
+    backgroundColor: 'rgba(11, 15, 23, 0.8)',
     color: 'white',
     fontFamily: "'Be Vietnam Pro', sans-serif",
     zIndex: 10,
-    backdropFilter: 'blur(6px)',
+    backdropFilter: 'blur(8px)',
   },
   hud: {
     position: 'absolute',
     top: 20, left: 20,
     color: '#fff',
-    fontSize: '20px',
+    fontSize: '24px',
     fontWeight: '800',
     fontFamily: "'Be Vietnam Pro', sans-serif",
     pointerEvents: 'none',
@@ -347,37 +372,62 @@ const styles: Record<string, CSSProperties> = {
   title: {
     fontSize: '64px',
     fontWeight: '900',
-    marginBottom: '30px',
+    marginBottom: '20px',
     textShadow: '4px 4px 0 #1e1b4b, 0 0 20px rgba(139, 92, 246, 0.5)',
-    letterSpacing: '2px',
     textAlign: 'center',
-    color: '#ddd6fe', // Soft Lavender
+    color: '#ddd6fe',
   },
   button: {
-    padding: '16px 48px',
-    fontSize: '28px',
+    padding: '12px 32px',
+    fontSize: '20px',
     fontWeight: '900',
     fontFamily: "'Be Vietnam Pro', sans-serif",
-    background: 'linear-gradient(to bottom, #8b5cf6, #6d28d9)', // Purple
+    background: 'linear-gradient(to bottom, #8b5cf6, #6d28d9)',
     color: 'white',
     border: 'none',
     borderRadius: '50px',
     cursor: 'pointer',
-    marginBottom: '20px',
-    boxShadow: '0 6px 0 #4c1d95, 0 10px 15px rgba(0,0,0,0.4)',
-    transition: 'transform 0.1s, box-shadow 0.1s',
+    boxShadow: '0 4px 0 #4c1d95',
+    transition: 'transform 0.1s',
     textTransform: 'uppercase',
-    letterSpacing: '1px',
+  },
+  miniButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    background: '#8b5cf6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    marginLeft: '10px',
+  },
+  saveContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '20px',
+    background: 'rgba(30, 41, 59, 0.5)',
+    padding: '10px',
+    borderRadius: '20px',
+    border: '1px solid #4338ca',
+  },
+  input: {
+    padding: '10px 15px',
+    fontSize: '16px',
+    background: 'transparent',
+    color: 'white',
+    border: 'none',
+    outline: 'none',
+    width: '150px',
+    textAlign: 'center',
   },
   hint: {
     color: '#a5b4fc',
     marginTop: '20px',
-    fontSize: '18px',
-    fontWeight: '500',
-    textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
+    fontSize: '16px',
   },
   scoreText: {
-    fontSize: '36px',
+    fontSize: '48px',
     margin: '10px 0',
     fontWeight: 'bold',
     color: '#fff',
@@ -391,86 +441,69 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     gap: '20px',
     marginBottom: '30px',
-    width: '90%',
-    maxWidth: '600px',
-    justifyContent: 'center',
     flexWrap: 'wrap',
+    justifyContent: 'center',
   },
   skinGroup: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '10px',
+    gap: '8px',
   },
   skinLabel: {
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: 'bold',
     color: '#a5b4fc',
-    margin: '0',
     textTransform: 'uppercase',
   },
   skinList: {
     display: 'flex',
     gap: '8px',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
   },
   skinItem: {
-    padding: '8px 12px',
-    borderRadius: '12px',
+    padding: '6px 10px',
+    borderRadius: '10px',
     border: '2px solid transparent',
     cursor: 'pointer',
-    fontSize: '14px',
+    fontSize: '12px',
     fontWeight: 'bold',
     color: '#fff',
     transition: 'all 0.2s',
-    userSelect: 'none',
-    textAlign: 'center',
-    flex: '1 1 auto',
-    minWidth: '80px',
   },
   previewBox: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: '20px',
-    padding: '16px',
+    marginBottom: '15px',
+    padding: '10px',
     background: 'rgba(30, 41, 59, 0.6)',
-    borderRadius: '32px',
-    border: '3px solid rgba(139, 92, 246, 0.4)',
-    boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
-    width: '140px',
-    height: '140px',
+    borderRadius: '25px',
+    border: '2px solid rgba(139, 92, 246, 0.4)',
+    width: '110px',
+    height: '110px',
     justifyContent: 'center',
   },
   previewCanvas: {
-    filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.5))',
+    filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))',
   },
   previewLabel: {
-    fontSize: '12px',
+    fontSize: '10px',
     fontWeight: 'bold',
     color: '#818cf8',
     textTransform: 'uppercase',
-    marginTop: '5px',
-    letterSpacing: '1px',
+    marginTop: '2px',
   },
-  // Settings Button
   settingsBtn: {
-    position: 'absolute',
-    top: '20px',
-    right: '20px',
-    width: '56px',
-    height: '56px',
+    width: '48px',
+    height: '48px',
     borderRadius: '50%',
-    background: 'rgba(30, 41, 59, 0.8)', // Dark Slate
-    border: '3px solid #6366f1', // Indigo
-    fontSize: '28px',
+    background: 'rgba(30, 41, 59, 0.8)',
+    border: '2px solid #6366f1',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    boxShadow: '0 4px 0 #4338ca, 0 4px 10px rgba(0,0,0,0.3)',
-    zIndex: 20,
+    color: '#fff',
     transition: 'transform 0.1s',
   },
   modalOverlay: {
@@ -484,15 +517,12 @@ const styles: Record<string, CSSProperties> = {
     zIndex: 30,
   },
   modal: {
-    width: '420px',
+    width: '400px',
     maxWidth: '90vw',
-    backgroundColor: '#1e1b4b', // Deep Indigo
+    backgroundColor: '#1e1b4b',
     borderRadius: '32px',
     border: '4px solid #4338ca',
     padding: '24px',
-    fontFamily: "'Be Vietnam Pro', sans-serif",
-    boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 0 0 20px rgba(99, 102, 241, 0.2)',
-    animation: 'popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -500,35 +530,24 @@ const styles: Record<string, CSSProperties> = {
   modalHeader: {
     width: '100%',
     display: 'flex',
-    justifyContent: 'flex-end',
-    marginBottom: '-10px',
-    zIndex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '15px',
   },
   modalTitle: {
-    fontSize: '28px',
+    fontSize: '24px',
     fontWeight: '900',
     color: '#ddd6fe',
-    marginBottom: '20px',
     textTransform: 'uppercase',
-    letterSpacing: '1px',
-    textAlign: 'center',
-    width: '100%',
-    textShadow: '0 0 10px rgba(139, 92, 246, 0.4)',
   },
   closeBtn: {
     background: '#312e81',
     border: '2px solid #6366f1',
     borderRadius: '50%',
-    width: '36px',
-    height: '36px',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
+    width: '32px',
+    height: '32px',
     color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 2px 0 #4338ca',
+    cursor: 'pointer',
   },
   modalBody: {
     width: '100%',
@@ -540,54 +559,18 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     cursor: 'pointer',
-    fontSize: '18px',
-    fontWeight: '600',
+    fontSize: '16px',
     color: '#ddd6fe',
     background: '#312e81',
-    padding: '16px 20px',
-    borderRadius: '20px',
+    padding: '12px 15px',
+    borderRadius: '15px',
     width: '100%',
+    marginBottom: '10px',
     boxSizing: 'border-box',
-    boxShadow: '0 4px 0 #1e1b4b',
-    transition: 'transform 0.1s',
   },
   checkbox: {
-    width: '24px',
-    height: '24px',
-    marginRight: '16px',
-    cursor: 'pointer',
-    accentColor: '#8b5cf6',
-  },
-  // Chibi Face (Dark Mode)
-  chibiFace: {
-    width: '80px',
-    height: '80px',
-    backgroundColor: '#312e81',
-    borderRadius: '50%',
-    position: 'relative',
-    marginBottom: '24px',
-    border: '4px solid #4338ca',
-    boxShadow: '0 4px 0 #1e1b4b, 0 0 15px rgba(99, 102, 241, 0.3)',
-  },
-  eyeLeft: {
-    position: 'absolute',
-    top: '30px', left: '18px',
-    width: '10px', height: '14px',
-    backgroundColor: '#ddd6fe',
-    borderRadius: '50%',
-  },
-  eyeRight: {
-    position: 'absolute',
-    top: '30px', right: '18px',
-    width: '10px', height: '14px',
-    backgroundColor: '#ddd6fe',
-    borderRadius: '50%',
-  },
-  mouth: {
-    position: 'absolute',
-    bottom: '20px', left: '30px',
-    width: '20px', height: '10px',
-    borderBottom: '4px solid #ddd6fe',
-    borderRadius: '0 0 50% 50%',
+    width: '20px',
+    height: '20px',
+    marginRight: '12px',
   }
 };
