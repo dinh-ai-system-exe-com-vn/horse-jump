@@ -212,22 +212,49 @@ export default function App() {
       engine.release();
     };
 
+    const handleTouchStart = (e: TouchEvent) => {
+      if (showSettings || showLeaderboard) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.tagName === 'LABEL' || target.tagName === 'svg' || target.tagName === 'path')) return;
+
+      if (e.cancelable) e.preventDefault();
+      engine.press();
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (showSettings || showLeaderboard) return;
+      engine.release();
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [engine, showSettings, showLeaderboard]);
 
   return (
     <div
-      style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none'
+      }}
       onContextMenu={(e) => e.preventDefault()}
     >
       <GameCanvas onGameInit={handleGameInit} />
