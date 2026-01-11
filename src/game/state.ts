@@ -50,6 +50,7 @@ export class GameState {
   score: number;
   best: number;
   deathCount: number;
+  totalJumps: number; // Theo dõi tổng số lần nhảy trong ván chơi
   timeAlive: number;
   speed: number;
   shake: number;
@@ -69,6 +70,7 @@ export class GameState {
     this.score = 0;
     this.best = parseInt(localStorage.getItem('chargeJumpBest')) || 0;
     this.deathCount = parseInt(localStorage.getItem('chargeJumpDeaths')) || 0;
+    this.totalJumps = 0;
     this.timeAlive = 0;
     this.speed = GAME_SETTINGS.speed.base;
     this.shake = 0;
@@ -108,12 +110,15 @@ export class GameState {
     }
   }
 
-  saveScoreToFirebase(playerName: string) {
+  saveScoreToFirebase(playerName: string, uid: string | null) {
+    if (!uid) return;
     const scoresRef = ref(database, 'scores');
     const newScoreRef = push(scoresRef);
     set(newScoreRef, {
-      name: playerName,
+      uid: uid,             // ID đăng nhập (không đổi)
+      name: playerName,      // Nickname (có thể đổi)
       score: this.score,
+      jumps: this.totalJumps, // Số lần nhảy trong ván này
       createdAt: new Date().toISOString()
     });
   }
@@ -125,6 +130,7 @@ export class GameState {
   reset() {
     this.gameOver = false;
     this.score = 0;
+    this.totalJumps = 0; // Reset số lần nhảy khi chơi lại
     this.timeAlive = 0;
     this.speed = GAME_SETTINGS.speed.base;
     this.shake = 0;
@@ -132,7 +138,6 @@ export class GameState {
     this.isCheater = false;
 
     this.player.x = 140;
-    // Note: Y reset depends on innerHeight, handled in GameEngine or resized
     this.player.vy = 0;
     this.player.onGround = true;
     this.player.charging = false;

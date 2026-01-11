@@ -1,9 +1,12 @@
 {
   "rules": {
-    ".read": "true",
-    ".write": "true",
     "scores": {
-      ".indexOn": ["score"]
+      ".read": "true",
+      ".indexOn": ["score"],
+      "$scoreId": {
+        ".write": "auth != null && (!data.exists() || data.child('uid').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['name', 'score', 'createdAt'])"
+      }
     }
   }
 }

@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "horse-jump-99db2"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

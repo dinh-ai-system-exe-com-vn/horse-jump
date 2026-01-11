@@ -5,6 +5,8 @@ import Leaderboard from './components/Leaderboard';
 import type { GameEngine } from './game/engine';
 import type { GameState } from './game/state';
 import { audioManager } from './game/audio';
+import { auth, googleProvider } from './firebase';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged, User } from 'firebase/auth';
 
 type GameUIState = {
   score: number;
@@ -20,6 +22,9 @@ type GameUIState = {
 
 export default function App() {
   const [engine, setEngine] = useState<GameEngine | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [nickname, setNickname] = useState(localStorage.getItem('playerName') || "");
+  
   const [gameState, setGameState] = useState<GameUIState>({
     score: 0,
     best: 0,
@@ -34,6 +39,71 @@ export default function App() {
 
   const [showSettings, setShowSettings] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  useEffect(() => {
+    // Check for redirect result
+    getRedirectResult(auth).then((result) => {
+      if (result?.user) {
+        console.log("Logged in via redirect successfully:", result.user.displayName);
+      }
+    }).catch((error) => {
+      console.error("Redirect Auth Error:", error.code, error.message);
+    });
+
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (u) {
+        console.log("Auth State Changed: User Logged In", u.uid);
+        // If no local nickname, use display name
+        if (!localStorage.getItem('playerName')) {
+          setNickname(u.displayName || "");
+          localStorage.setItem('playerName', u.displayName || "");
+        }
+      } else {
+        console.log("Auth State Changed: User Logged Out");
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async () => {
+    console.log("Login button clicked. Attempting login...");
+    try {
+      // Try popup first
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log("Popup login success:", result.user.displayName);
+    } catch (error: any) {
+      console.warn("Popup login failed or blocked:", error.code, error.message);
+      
+      if (error.code === 'auth/popup-blocked' || 
+          error.code === 'auth/operation-not-supported-in-this-environment' ||
+          error.code === 'auth/auth-domain-config-required') {
+        console.log("Attempting Redirect login as fallback...");
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError: any) {
+          console.error("Redirect login also failed:", redirectError.message);
+          alert("Không thể mở cửa sổ đăng nhập. Hãy kiểm tra cài đặt chặn pop-up của trình duyệt hoặc cấu hình Firebase.");
+        }
+      } else {
+        alert("Lỗi đăng nhập: " + error.message);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      console.log("Logged out successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  const handleUpdateNickname = (newNickname: string) => {
+    setNickname(newNickname);
+    localStorage.setItem('playerName', newNickname);
+  };
 
   const handleGameInit = useCallback((eng: GameEngine) => {
     setEngine(eng);
@@ -76,8 +146,12 @@ export default function App() {
   };
 
   const handleSaveScore = (playerName: string) => {
-    engine?.state.saveScoreToFirebase(playerName);
-    setShowLeaderboard(true);
+    if (user) {
+      engine?.state.saveScoreToFirebase(playerName, user.uid);
+      setShowLeaderboard(true);
+    } else {
+      handleLogin();
+    }
   };
 
   // Input Listeners
@@ -91,6 +165,9 @@ export default function App() {
 
       if (engine.state.inMenu || engine.state.gameOver) {
         if (e.code === "Space" || e.code === "Enter") {
+          const target = document.activeElement;
+          if (target && target.tagName === 'INPUT') return; // Don't trigger game start if typing
+          
           if (engine.state.inMenu) handleStart();
           else handleRestart();
         }
@@ -132,6 +209,11 @@ export default function App() {
       <GameCanvas onGameInit={handleGameInit} />
       <UI
         gameState={gameState}
+        user={user}
+        nickname={nickname}
+        onUpdateNickname={handleUpdateNickname}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
         onStart={handleStart}
         onRestart={handleRestart}
         onToggleTrajectory={() => engine?.toggleTrajectory()}

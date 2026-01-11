@@ -5,6 +5,7 @@ import { database } from '../firebase';
 type Score = {
   name: string;
   score: number;
+  jumps: number;
   createdAt: string;
 };
 
@@ -53,7 +54,8 @@ const Leaderboard = ({ onClose }: LeaderboardProps) => {
                   <tr style={styles.tableHeaderRow}>
                     <th style={styles.th}>Hạng</th>
                     <th style={styles.th}>Người chơi</th>
-                    <th style={styles.th}>Điểm</th>
+                    <th style={styles.thCenter}>Số nhảy</th>
+                    <th style={styles.thCenter}>Điểm</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -63,6 +65,7 @@ const Leaderboard = ({ onClose }: LeaderboardProps) => {
                         {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
                       </td>
                       <td style={styles.td}>{score.name}</td>
+                      <td style={styles.tdJumps}>{score.jumps || 0}</td>
                       <td style={styles.tdScore}>{score.score}</td>
                     </tr>
                   ))}
@@ -88,8 +91,8 @@ const styles: Record<string, CSSProperties> = {
     zIndex: 200,
   },
   modal: {
-    width: '480px',
-    maxWidth: '90vw',
+    width: '520px',
+    maxWidth: '95vw',
     backgroundColor: '#1e1b4b', // Deep Indigo
     borderRadius: '32px',
     border: '4px solid #4338ca',
@@ -159,6 +162,14 @@ const styles: Record<string, CSSProperties> = {
     textTransform: 'uppercase',
     fontWeight: 'bold',
   },
+  thCenter: {
+    padding: '12px',
+    textAlign: 'center',
+    color: '#a5b4fc',
+    fontSize: '14px',
+    textTransform: 'uppercase',
+    fontWeight: 'bold',
+  },
   row: {
     borderBottom: '1px solid rgba(67, 56, 202, 0.3)',
   },
@@ -170,12 +181,18 @@ const styles: Record<string, CSSProperties> = {
     padding: '14px 12px',
     fontSize: '16px',
   },
+  tdJumps: {
+    padding: '14px 12px',
+    fontSize: '16px',
+    color: '#a5b4fc',
+    textAlign: 'center',
+  },
   tdScore: {
     padding: '14px 12px',
     fontSize: '18px',
     fontWeight: 'bold',
     color: '#fcd34d',
-    textAlign: 'right',
+    textAlign: 'center',
   }
 };
 

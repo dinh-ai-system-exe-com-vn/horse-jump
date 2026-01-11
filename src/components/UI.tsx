@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { CONSTANTS, type SkinDefinition } from '../game/constants';
 import { assets } from '../game/assets';
+import { User } from 'firebase/auth';
 
 type SkinType = 'horse' | 'wings';
 
@@ -81,6 +82,9 @@ const CharacterPreview = ({ horseSkin, wingsSkin }: CharacterPreviewProps) => {
 
 type UIProps = {
   gameState: GameUIState;
+  user: User | null;
+  onLogin: () => void;
+  onLogout: () => void;
   onStart: () => void;
   onRestart: () => void;
   onToggleTrajectory: () => void;
@@ -137,7 +141,7 @@ const Icons = {
   Settings: () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3"></circle>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
   ),
   Trophy: () => (
@@ -149,11 +153,22 @@ const Icons = {
       <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
       <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
     </svg>
+  ),
+  Google: () => (
+    <svg width="20" height="20" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+      <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
   )
 };
 
 export default function UI({
   gameState,
+  user,
+  onLogin,
+  onLogout,
   onStart,
   onRestart,
   onToggleTrajectory,
@@ -168,11 +183,19 @@ export default function UI({
   const [playerName, setPlayerName] = useState(localStorage.getItem('playerName') || "");
   const [hasSaved, setHasSaved] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      setPlayerName(user.displayName || "");
+    }
+  }, [user]);
+
   const handleSaveScore = () => {
-    if (playerName.trim() !== "" && !hasSaved) {
+    if (user && playerName.trim() !== "" && !hasSaved) {
       localStorage.setItem('playerName', playerName.trim());
       onSaveScore(playerName.trim());
       setHasSaved(true);
+    } else if (!user) {
+      onLogin();
     }
   };
 
@@ -258,25 +281,36 @@ export default function UI({
           <p style={styles.subText}>Kỷ lục: {best}</p>
           
           <div style={styles.saveContainer}>
-            <input
-              type="text"
-              placeholder="Nhập tên của bạn"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              style={styles.input}
-              maxLength={15}
-            />
-            <button 
-              style={{ 
-                ...styles.miniButton, 
-                opacity: (hasSaved || playerName.trim() === "") ? 0.5 : 1,
-                cursor: (hasSaved || playerName.trim() === "") ? 'default' : 'pointer'
-              }} 
-              onClick={handleSaveScore}
-              disabled={hasSaved || playerName.trim() === ""}
-            >
-              {hasSaved ? 'Đã lưu' : 'Lưu điểm'}
-            </button>
+            {user ? (
+              <>
+                <input
+                  type="text"
+                  placeholder="Nhập tên của bạn"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  style={styles.input}
+                  maxLength={15}
+                />
+                <button 
+                  style={{ 
+                    ...styles.miniButton, 
+                    opacity: (hasSaved || playerName.trim() === "") ? 0.5 : 1,
+                    cursor: (hasSaved || playerName.trim() === "") ? 'default' : 'pointer'
+                  }} 
+                  onClick={handleSaveScore}
+                  disabled={hasSaved || playerName.trim() === ""}
+                >
+                  {hasSaved ? 'Đã lưu' : 'Lưu điểm'}
+                </button>
+              </>
+            ) : (
+              <button 
+                style={{ ...styles.miniButton, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px' }} 
+                onClick={onLogin}
+              >
+                <Icons.Google /> Đăng nhập để lưu điểm
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
@@ -325,11 +359,28 @@ export default function UI({
               <button style={styles.closeBtn} onClick={onToggleSettings}>✖</button>
             </div>
             <div style={styles.modalBody}>
+              
+              {user ? (
+                <div style={styles.settingsUserSection}>
+                  <img src={user.photoURL || ""} alt="avatar" style={styles.avatar} />
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={styles.userName}>{user.displayName}</span>
+                    <button onClick={onLogout} style={styles.logoutBtn}>Đăng xuất</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={onLogin} style={{ ...styles.loginBtn, marginBottom: '20px', width: '100%', justifyContent: 'center' }}>
+                  <Icons.Google /> Đăng nhập với Google
+                </button>
+              )}
+
               <CharacterPreview horseSkin={horseSkin} wingsSkin={wingsSkin} />
+              
               <div style={{ width: '100%', marginBottom: '20px' }}>
                 <SkinSelector type="horse" current={horseSkin} skins={CONSTANTS.HORSE_SKINS} onChange={onSkinChange} />
                 <SkinSelector type="wings" current={wingsSkin} skins={CONSTANTS.WINGS_SKINS} onChange={onSkinChange} />
               </div>
+              
               <label style={{ ...styles.label, marginBottom: '12px' }}>
                 <input type="checkbox" checked={showTrajectory} onChange={onToggleTrajectory} style={styles.checkbox} />
                 Hiện đường kẻ dự đoán
@@ -347,6 +398,54 @@ export default function UI({
 }
 
 const styles: Record<string, CSSProperties> = {
+  settingsUserSection: {
+    display: 'flex',
+    alignItems: 'center',
+    background: 'rgba(49, 46, 129, 0.5)',
+    padding: '10px 20px',
+    borderRadius: '20px',
+    width: '100%',
+    marginBottom: '20px',
+    boxSizing: 'border-box',
+    border: '1px solid #4338ca',
+  },
+  avatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    marginRight: '12px',
+    border: '2px solid #6366f1',
+  },
+  userName: {
+    fontSize: '16px',
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  logoutBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#f87171',
+    fontSize: '13px',
+    cursor: 'pointer',
+    textDecoration: 'underline',
+    padding: 0,
+    textAlign: 'left',
+    marginTop: '2px',
+  },
+  loginBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    background: 'linear-gradient(135deg, #4285F4, #34A853)',
+    color: '#fff',
+    border: 'none',
+    padding: '12px 20px',
+    borderRadius: '15px',
+    fontSize: '15px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+  },
   overlay: {
     position: 'absolute',
     top: 0, left: 0, width: '100%', height: '100%',
@@ -400,7 +499,6 @@ const styles: Record<string, CSSProperties> = {
     border: 'none',
     borderRadius: '12px',
     cursor: 'pointer',
-    marginLeft: '10px',
   },
   saveContainer: {
     display: 'flex',
@@ -410,6 +508,8 @@ const styles: Record<string, CSSProperties> = {
     padding: '10px',
     borderRadius: '20px',
     border: '1px solid #4338ca',
+    minHeight: '60px',
+    justifyContent: 'center',
   },
   input: {
     padding: '10px 15px',
