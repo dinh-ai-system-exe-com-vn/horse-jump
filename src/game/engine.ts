@@ -19,7 +19,7 @@ export class GameEngine {
   constructor(canvas: HTMLCanvasElement, onUIUpdate: UIUpdateCallback) {
     this.state = new GameState();
     this.renderer = new Renderer(canvas);
-    this.onUIUpdate = onUIUpdate; 
+    this.onUIUpdate = onUIUpdate;
     this.running = true;
     this.tPrev = performance.now();
     this.reqId = null;
@@ -204,11 +204,25 @@ export class GameEngine {
       let gapMin = difficultySettings.gap.min;
       let gapMax = difficultySettings.gap.max;
       if (lastOb) {
-        if (lastOb.type === 'wall' && lastOb.h / CONSTANTS.BLOCK_SIZE >= 2) {
-          gapMin += obstacleSettings.gapAdjustments.tallWall.min;
-          gapMax += obstacleSettings.gapAdjustments.tallWall.max;
-        } else if (lastOb.type === 'ceiling') { gapMin += 100; gapMax += 150; }
-        else if (lastOb.type === 'mid') { gapMin += 50; gapMax += 100; }
+        // Prepare gap adjustments
+        if (lastOb.type === 'wall') {
+          const lastH = lastOb.h / CONSTANTS.BLOCK_SIZE;
+          const currentH = h / CONSTANTS.BLOCK_SIZE;
+
+          if (lastH >= 2) {
+            // Previous was tall, need cooldown
+            gapMin += obstacleSettings.gapAdjustments.tallWall.min;
+            gapMax += obstacleSettings.gapAdjustments.tallWall.max;
+          } else if (lastH === 1 && currentH === 3) {
+            // Short then Tall: NEED extra space to charge safely
+            gapMin += obstacleSettings.gapAdjustments.shortToTall.min;
+            gapMax += obstacleSettings.gapAdjustments.shortToTall.max;
+          }
+        } else if (lastOb.type === 'ceiling') {
+          gapMin += 50; gapMax += 100;
+        } else if (lastOb.type === 'mid') {
+          gapMin += 25; gapMax += 75;
+        }
       }
       const nextX = (lastOb ? lastOb.x + lastOb.w : width) + rand(gapMin, gapMax);
       x = Math.max(width + obstacleSettings.minSpawnPadding, nextX);
@@ -238,8 +252,8 @@ export class GameEngine {
       const scoreValue = Number(state.score);
       const speedSettings = GAME_SETTINGS.speed;
       const expectedSpeed = speedSettings.mode === 'step'
-          ? Math.min(speedSettings.base + Math.floor(this.trueScore / speedSettings.step.scoreStep) * speedSettings.step.speedStep, speedSettings.step.max)
-          : speedSettings.base + this.trueScore * speedSettings.linear.gainPerScore;
+        ? Math.min(speedSettings.base + Math.floor(this.trueScore / speedSettings.step.scoreStep) * speedSettings.step.speedStep, speedSettings.step.max)
+        : speedSettings.base + this.trueScore * speedSettings.linear.gainPerScore;
 
       if (this.trueScore < 5) state.difficulty = 'easy';
       else if (this.trueScore < 15) state.difficulty = 'normal';
